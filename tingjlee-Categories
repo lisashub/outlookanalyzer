@@ -9,7 +9,7 @@ outlook = win32com.client.Dispatch("Outlook.Application").GetNamespace(
 inbox = outlook.GetDefaultFolder(6)  # outlook.GetDefaultFolder(6) is the default for the application inbox
 messages = inbox.Items  # variable for items in inbox
 
-# Checks, counts, and prints emails that have been set with categories (by user)
+# Checks, counts, and prints email info that have been set with categories (by user)
 i = 0
 for item in messages:
     if item.Categories:
