@@ -21,7 +21,7 @@ print('\n')
 data = {'Number of emails categorize': [i]}
 df = pd.DataFrame(data)
 
-#Removing the axis and creating a visual table of the counted emails that are categorize
+#Removing the axis for matplotlib and creating a visual table of the counted emails that are categorize
 fig, ax = plt.subplots()
 ax.axis('off')
 ax.axis('tight')
