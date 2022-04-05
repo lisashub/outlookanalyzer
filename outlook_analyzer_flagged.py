@@ -5,7 +5,7 @@
 import win32com.client #core extraction library
 from tqdm import tqdm # library to display extraction progress bar
 import pandas as pd # library to tabulate data and generate plot/image
-import numpy as np
+# import numpy as np
 import dataframe_image as dfi
 from PIL import Image #library to display image (temporary if we build web frontend
 
@@ -22,44 +22,51 @@ messages = inbox.Items #variable for items in inbox
 
 flagged_messages_list = []
 
-i = 0 # counter variable to help count collected senders
+i = 0 # counter variable to help count of flagged messages
 print("Retrieving Messages:")
 for item in tqdm(messages):
 
 # https://devblogs.microsoft.com/scripting/how-can-i-determine-the-follow-up-status-of-outlook-emails/
 # FlagStatus 1 is completed
 # FlagStatus 2 is Marked for follow-up
-    if (item.FlagRequest == "Follow up" and item.FlagStatus == 2):
-        i += 1 # counter incrementer
 
-        # Create dict object
-        flagged_messages_dict = {}
-    
-        # Assign value and add to dict
-        subject = item.subject
-        flagged_messages_dict['subject'] = subject
+    try:
+        if (item.FlagRequest != "" and item.FlagStatus == 2):
+            # Using 'item.FlagRequest != ""' is working better than 'item.FlagRequest == "Follow up"'. It caught other flagged emails.
 
-        sender_email = item.SenderEmailAddress
-        flagged_messages_dict['sender_email'] = sender_email
+            i += 1 # counter incrementer
 
-        received_time = item.ReceivedTime.strftime("%m/%d/%Y %H:%M:%S")
-        flagged_messages_dict['received_time'] = received_time
+            # Create dict object
+            flagged_messages_dict = {}
+        
+            # Assign value and add to dict
+            subject = item.subject
+            flagged_messages_dict['subject'] = subject
 
+            sender_email = item.SenderEmailAddress
+            flagged_messages_dict['sender_email'] = sender_email
+
+            received_time = item.ReceivedTime.strftime("%m/%d/%Y %H:%M:%S")
+            flagged_messages_dict['received_time'] = received_time
+
+            flagged_messages_list.append(flagged_messages_dict)
+
+    except Exception as e:
+
+        print("error extracting details for flagged email:" + str(e))
         # Add each dict to list
-        flagged_messages_list.append(flagged_messages_dict)
 
         # print(i)
         # print(subject)
         # print(sender_email)
         # print(received_time)
 
+number_of_flagged_follow_up_messages = i
 
 #Prints some ouputs to Command Line
 print("\n")
-print("Number of Flagged emails: " , i)
+print("Number of Flagged emails: " , number_of_flagged_follow_up_messages)
 # print(flagged_messages_list)
-
-number_of_flagged_follow_up_messages = i
 
 if (number_of_flagged_follow_up_messages > 0):
 
@@ -67,9 +74,9 @@ if (number_of_flagged_follow_up_messages > 0):
 
         # Create a dataframe from the list of dictionaries
         df = pd.DataFrame(flagged_messages_list)
+
     except Exception as e:
         print("error when creating data frame:" + str(e))
-        
 
     try:
 
@@ -80,4 +87,4 @@ if (number_of_flagged_follow_up_messages > 0):
         im.show()
 
     except Exception as e:
-        print("error when exportin data frame:" + str(e))
+        print("error when exporting data frame:" + str(e))
