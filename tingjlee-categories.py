@@ -13,7 +13,7 @@ messages = inbox.Items  # variable for items in inbox
 i = 0
 for item in messages:
     if item.Categories:
-        print(item.Sender, '-', item.Categories)
+        print(item.SenderEmailAddress, '-', item.Categories)
         i = i + 1
 print('\n')
 
