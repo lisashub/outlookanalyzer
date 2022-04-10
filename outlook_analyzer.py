@@ -8,45 +8,13 @@ import dataframe_image as dfi
 from wordcloud import WordCloud, STOPWORDS #word cloud generation library
 import re #regex library used to clean data
 
-
-
-
-def main():
+#Extracts data from Outlook
+def extract_outlook_information(ERROR_LIST): #to modify as new features required
     
-    #Connection to Outlook object model established; can move to extract only module, too
+    #Connection to Outlook object model established
     outlook = win32com.client.Dispatch("Outlook.Application").GetNamespace("MAPI") #maps outlook variable to outlook application
     inbox = outlook.GetDefaultFolder(6) #outlook.GetDefaultFolder(6) is the default for the application inbox
     messages = inbox.Items #variable for items in inbox
-    
-    ERROR_LIST = []
-    
-    
-    print("\n")
-    print("Welcome to Outlook Analyzer!")
-    user_response = input("Would you like to extract fresh data from Outlook? (Y/N)")
-    
-    #Logic to determine whether extraction is required
-    if user_response == "Y" or user_response == "y":
-        ERROR_LIST = extract_outlook_information(messages, ERROR_LIST)
-    elif user_response == "N" or user_response == "n":
-        #placeholder code; to re-create to hook in PDF generation logic using existing files
-        try:
-            word_cloud_extract(messages, ERROR_LIST)
-            word_cloud_display(ERROR_LIST)
-        except Exception as e:
-            ERROR_LIST.append("error extracting generating visualizations: " + str(e))
-            
-    else:
-        print("Sorry, the provided response was not understood.")
-    
-    #displays errors generated throughout program execution
-    if ERROR_LIST != []:
-        print("\n")
-        print("Some errors occurred during execution:")
-        for item in ERROR_LIST:
-            print(item)
-
-def extract_outlook_information(messages, ERROR_LIST): #to modify as new features required
     
     #create data files
     sender_data_file = open("unread_senders.txt", "w+", encoding = "utf-8")
@@ -58,7 +26,6 @@ def extract_outlook_information(messages, ERROR_LIST): #to modify as new feature
     unread_senders_unique_dict = {} #dictionary variable to capture unique unread senders with counts
     categories_senders_list = [] #dictionary variable to capture category and sender information
     flagged_messages_list = [] #list to capture flagged messege info
-    flagged_messages_dict = {} #dict to capture flagged message info
     
     categories_counter_int = 0
     flagged_counter_int = 0
@@ -87,7 +54,9 @@ def extract_outlook_information(messages, ERROR_LIST): #to modify as new feature
         #check and store flagged email info
         try:
             if (item.FlagRequest != ""): #checks and stores flag info
-             
+            
+             flagged_messages_dict = {} #dict to capture flagged message info
+            
              # Assign value and add to dict
              subject = item.subject
              flagged_messages_dict['subject'] = subject
@@ -124,7 +93,6 @@ def extract_outlook_information(messages, ERROR_LIST): #to modify as new feature
 
 #Generates data for undread senders visualizations
 def word_cloud_extract(messages, ERROR_LIST):
-    messages.Sort("[ReceivedTime]",True)
     wc_file = open("word_cloud_text.txt", "w+", encoding = "utf-8") #creates data file
     i = 0
     for item in messages:
@@ -132,7 +100,7 @@ def word_cloud_extract(messages, ERROR_LIST):
             print(item.Body, file = wc_file)
             i = i + 1
         else:
-            word_cloud_content_clean(ERROR_LIST) #text-cleaning function called
+            ERROR_LIST = word_cloud_content_clean(ERROR_LIST) #text-cleaning function called
             wc_file.close()
             return (ERROR_LIST)
         
@@ -230,14 +198,16 @@ def word_cloud_content_clean(ERROR_LIST):
     wc_content_cleaned = open("word_cloud_text_cleaned.txt", "w+", encoding = "utf-8")
     
     #Sets hyperlink tags as indices markers
-    sub1 = '<'
+    sub1 = '<h'
     sub2 = '>'
     
     #Generates list of indices for each tag        
     indices1 = [m.start() for m in re.finditer(sub1, wc_content)]
-    indices2 = [m.start() for m in re.finditer(sub2, wc_content)]
+    indices2 = [m.start() for m in re.finditer(sub2, wc_content[indices1[0]:])]
+  
     
     #Prints first line of email text up to first hyperlink tag
+    
     print(wc_content[0:indices1[0]],file = wc_content_cleaned)
 
     #Uses iteration through hyperlink tags to extract and print non-hyperlink text to new
@@ -248,16 +218,17 @@ def word_cloud_content_clean(ERROR_LIST):
         ix = ix + 1
         
     wc_content_cleaned.close()
+    
     return(ERROR_LIST)
 
 #Generates word cloud from cleaned email text
 def word_cloud_generate():
     wc_content= open("word_cloud_text_cleaned.txt", "r", encoding = "utf-8").read()
-    stop_words = ["said", "email", "s", "will", "u", "re"] + list(STOPWORDS) #customized stopword list
+    stop_words = ["said", "email", "s", "will", "u", "re", "3A", "2F", "safelinks", "reserved", "https"] + list(STOPWORDS) #customized stopword list
     wordcloud = WordCloud(stopwords = stop_words).generate(str(wc_content))
     return(wordcloud)
 
-#Saves and displays newly generated word cloud to user
+#Saves and displays word cloud to user
 def word_cloud_display(ERROR_LIST):
     try:
         plt.clf()
@@ -275,6 +246,35 @@ def unique (list1):
         if item not in unique_elements_list:
             unique_elements_list.append(item)
     return unique_elements_list
+
+#UI code; checks whether new extraction required and calls if necessary
+def main():
+    
+    ERROR_LIST = []
+    
+    
+    print("\n")
+    print("Welcome to Outlook Analyzer!")
+    user_response = input("Would you like to extract fresh data from Outlook? (Y/N)")
+    
+    #Logic to determine whether extraction is required
+    if user_response == "Y" or user_response == "y":
+        ERROR_LIST = extract_outlook_information(ERROR_LIST)
+    elif user_response == "N" or user_response == "n":
+        #placeholder code; to re-create to hook in PDF generation logic using existing files
+        try:
+            ERROR_LIST = word_cloud_display(ERROR_LIST)
+        except Exception as e:
+            ERROR_LIST.append("error extracting generating visualizations: " + str(e))     
+    else:
+        print("Sorry, the provided response was not understood.")
+    
+    #displays errors generated throughout program execution
+    if ERROR_LIST != []:
+        print("\n")
+        print("Some errors occurred during execution:")
+        for item in ERROR_LIST:
+            print(item)
 
 if __name__ == "__main__":
     main()
