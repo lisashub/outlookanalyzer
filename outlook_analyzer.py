@@ -128,34 +128,40 @@ def unread_senders_data_gen(unread_senders_raw_list,ERROR_LIST, unread_senders_u
 def generate_unread_senders_viz(ERROR_LIST):
     
     #Reads unread sender data and generates visualization; saves and displays
-    sender_table = pd.read_table('unread_senders.txt', sep = '\t', header = None)
-    plot = sender_table.groupby([0]).sum().plot(kind='pie', y=1, labeldistance=None, autopct='%1.0f%%', title="Senders of Unread Emails")
-    plot.legend(bbox_to_anchor=(1,1)) #Sets legend details
-    plot.set_ylabel("Senders") #Set label detail
-    plot.figure.savefig("sender_plot.jpg", bbox_inches='tight') #saves plot locally
-    print("\n","Top 10 Senders of Unread Emails: ", "\n", sender_table)
+    try:
+        sender_table = pd.read_table('unread_senders.txt', sep = '\t', header = None)
+        plot = sender_table.groupby([0]).sum().plot(kind='pie', y=1, labeldistance=None, autopct='%1.0f%%', title="Senders of Unread Emails")
+        plot.legend(bbox_to_anchor=(1,1)) #Sets legend details
+        plot.set_ylabel("Senders") #Set label detail
+        plot.figure.savefig("sender_plot.jpg", bbox_inches='tight') #saves plot locally
+        print("\n","Top 10 Senders of Unread Emails: ", "\n", sender_table)
+    except Exception as e:
+        ERROR_LIST.append("error when generating senders visual:" + str(e))
     
     return(ERROR_LIST)
 
 #Generates categories visualizations
 def generate_categories_viz(categories_counter_int,categories_senders_list, ERROR_LIST):
     
-    #Pandas dataframe for the counted emails that are categorized
-    data = {'Number of email categories': [categories_counter_int]}
-    df = pd.DataFrame(data)
-
-    #Removing the axis for matplotlib and creating a visual table of the counted emails that are categorize
-    fig, ax = plt.subplots()
-    ax.axis('off')
-    ax.axis('tight')
-    ax.table(cellText=df.values, cellLoc='center', colLabels=df.columns, loc='center')
-    fig.tight_layout()
-    plt.savefig("categories.jpg")
+    try:
+        #Pandas dataframe for the counted emails that are categorized
+        data = {'Number of email categories': [categories_counter_int]}
+        df = pd.DataFrame(data)
     
-    #prints a tabulate table using the pandas dataframe
-    print("\n")
-    print(tabulate(df, headers='keys', tablefmt='fancy_grid', showindex='never'))
-    print(categories_senders_list)
+        #Removing the axis for matplotlib and creating a visual table of the counted emails that are categorize
+        fig, ax = plt.subplots()
+        ax.axis('off')
+        ax.axis('tight')
+        ax.table(cellText=df.values, cellLoc='center', colLabels=df.columns, loc='center')
+        fig.tight_layout()
+        plt.savefig("categories.jpg")
+        
+        #prints a tabulate table using the pandas dataframe
+        print("\n")
+        print(tabulate(df, headers='keys', tablefmt='fancy_grid', showindex='never'))
+        print(categories_senders_list)
+    except Exception as e:
+        ERROR_LIST.append("error when generating categories visualization:" + str(e))
     
     return(ERROR_LIST)
 
@@ -194,30 +200,35 @@ def generate_flagged_viz(flagged_counter_int, flagged_messages_list, ERROR_LIST)
 
 #Removes hyperlink information from email body to produce more meaningful clouds
 def word_cloud_content_clean(ERROR_LIST):
-    wc_content= open("word_cloud_text.txt", "r", encoding = "utf-8").read()
-    wc_content_cleaned = open("word_cloud_text_cleaned.txt", "w+", encoding = "utf-8")
     
-    #Sets hyperlink tags as indices markers
-    sub1 = '<h'
-    sub2 = '>'
-    
-    #Generates list of indices for each tag        
-    indices1 = [m.start() for m in re.finditer(sub1, wc_content)]
-    indices2 = [m.start() for m in re.finditer(sub2, wc_content[indices1[0]:])]
-  
-    
-    #Prints first line of email text up to first hyperlink tag
-    
-    print(wc_content[0:indices1[0]],file = wc_content_cleaned)
-
-    #Uses iteration through hyperlink tags to extract and print non-hyperlink text to new
-    #file
-    ix = 0 
-    for i in range(len(indices1)-1):
-        print(wc_content[indices2[ix]+1:indices1[ix+1]], file = wc_content_cleaned)
-        ix = ix + 1
+    try:
+        wc_content= open("word_cloud_text.txt", "r", encoding = "utf-8").read()
+        wc_content_cleaned = open("word_cloud_text_cleaned.txt", "w+", encoding = "utf-8")
         
-    wc_content_cleaned.close()
+        #Sets hyperlink tags as indices markers
+        sub1 = '<h'
+        sub2 = '>'
+        
+        #Generates list of indices for each tag        
+        indices1 = [m.start() for m in re.finditer(sub1, wc_content)]
+        indices2 = [m.start() for m in re.finditer(sub2, wc_content[indices1[0]:])]
+      
+        
+        #Prints first line of email text up to first hyperlink tag
+        
+        print(wc_content[0:indices1[0]],file = wc_content_cleaned)
+    
+        #Uses iteration through hyperlink tags to extract and print non-hyperlink text to new
+        #file
+        ix = 0 
+        for i in range(len(indices1)-1):
+            print(wc_content[indices2[ix]+1:indices1[ix+1]], file = wc_content_cleaned)
+            ix = ix + 1
+            
+        wc_content_cleaned.close()
+    
+    except Exception as e:
+        ERROR_LIST.append("error cleaning word cloud content:" + str(e))
     
     return(ERROR_LIST)
 
