@@ -93,34 +93,42 @@ def extract_outlook_information(ERROR_LIST): #to modify as new features required
 
 #Generates data for undread senders visualizations
 def word_cloud_extract(messages, ERROR_LIST):
-    wc_file = open("word_cloud_text.txt", "w+", encoding = "utf-8") #creates data file
-    i = 0
-    for item in messages:
-        if(i<50):
-            print(item.Body, file = wc_file)
-            i = i + 1
-        else:
-            ERROR_LIST = word_cloud_content_clean(ERROR_LIST) #text-cleaning function called
-            wc_file.close()
-            return (ERROR_LIST)
+    
+    try:
+        wc_file = open("word_cloud_text.txt", "w+", encoding = "utf-8") #creates data file
+        i = 0
+        for item in messages:
+            if(i<50):
+                print(item.Body, file = wc_file)
+                i = i + 1
+            else:
+                ERROR_LIST = word_cloud_content_clean(ERROR_LIST) #text-cleaning function called
+                wc_file.close()
+    except Exception as e:
+        ERROR_LIST.append("error when extracting word cloud data:" + str(e))
+    
+    return (ERROR_LIST)
         
 #Generates data for unread senders visualizations
 def unread_senders_data_gen(unread_senders_raw_list,ERROR_LIST, unread_senders_unique_dict,sender_data_file):
-    unread_senders_unique_list = unique(unread_senders_raw_list)
+    try:
+        unread_senders_unique_list = unique(unread_senders_raw_list)
+        
+        for sender in unread_senders_unique_list:
+            unread_senders_unique_dict[sender] = unread_senders_raw_list.count(sender)
+        
+        unread_senders_unique_list = sorted(unread_senders_unique_dict.items(), key = lambda x:x[1], reverse = True) # sorts dict and stores as list
+        unread_senders_unique_sorted_dict = dict(unread_senders_unique_list) #converts list back to dict
     
-    for sender in unread_senders_unique_list:
-        unread_senders_unique_dict[sender] = unread_senders_raw_list.count(sender)
-    
-    unread_senders_unique_list = sorted(unread_senders_unique_dict.items(), key = lambda x:x[1], reverse = True) # sorts dict and stores as list
-    unread_senders_unique_sorted_dict = dict(unread_senders_unique_list) #converts list back to dict
-
-    senders_counter_int = 0 # counter variable to help count collected senders
-    for item in unread_senders_unique_sorted_dict.items(): #write's top nth senders and email count to file
-        if (senders_counter_int<10):
-            print(item[0], "\t", item[1], file = sender_data_file)
-            senders_counter_int = senders_counter_int + 1
-    
-    sender_data_file.close()
+        senders_counter_int = 0 # counter variable to help count collected senders
+        for item in unread_senders_unique_sorted_dict.items(): #write's top nth senders and email count to file
+            if (senders_counter_int<10):
+                print(item[0], "\t", item[1], file = sender_data_file)
+                senders_counter_int = senders_counter_int + 1
+        
+        sender_data_file.close()
+    except Exception as e:
+        ERROR_LIST.append("error when generating unread senders data:" + str(e))
     
     return (ERROR_LIST)
 
@@ -136,7 +144,7 @@ def generate_unread_senders_viz(ERROR_LIST):
         plot.figure.savefig("sender_plot.jpg", bbox_inches='tight') #saves plot locally
         print("\n","Top 10 Senders of Unread Emails: ", "\n", sender_table)
     except Exception as e:
-        ERROR_LIST.append("error when generating senders visual:" + str(e))
+        ERROR_LIST.append("error when generating unread senders visual:" + str(e))
     
     return(ERROR_LIST)
 
