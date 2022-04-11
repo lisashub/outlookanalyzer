@@ -11,9 +11,6 @@ FILE_PATH = TEMP_DIR + "\\" + FILE_NAME
 
 def read_email(save_data_boolean,data_source_str):
 
-    print(save_data_boolean)
-    print(data_source_str)
-
     if data_source_str == "Outlook":
 
         print("Connecting to Outlook...")
@@ -245,8 +242,8 @@ def read_email(save_data_boolean,data_source_str):
     # Here the output should be the same if it comes from Outlook or comes from the JSON file
     print("\nPrinting values from all_messages_list\n")
     for dict_item in all_messages_list:
+        # Example of extracting something from the list of dict_item
         print("SenderEmailAddress:", dict_item['SenderEmailAddress'])
-
 
 def main():
 
