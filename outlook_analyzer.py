@@ -15,8 +15,7 @@ import sys
 
 ERROR_LIST = []
 TEMP_DIR = "C:\WINDOWS\Temp"
-EMAIL_OUTPUT = "email_out"
-EMAIL_FILE_PATH = TEMP_DIR + "\\" + EMAIL_OUTPUT
+EMAIL_FILE_PATH = TEMP_DIR + "\\" + "email_out"
 WORD_CLOUD_CLEANED_FILE_NAME = TEMP_DIR + "\\" + "word_cloud_text_cleaned.txt"
 WORD_CLOUD_FILE_NAME = TEMP_DIR + "\\" + "word_cloud_text.txt"
 WORD_CLOUD_IMAGE_FILE_NAME = TEMP_DIR + "\\" + "word_cloud.jpg"
@@ -259,12 +258,7 @@ def read_email(save_data_boolean,data_source_str):
 
 #Extracts data from Outlook
 def extract_email_information_from_messages_list(all_messages_list): #to modify as new features required
-    
-    #Connection to Outlook object model established
-    outlook = win32com.client.Dispatch("Outlook.Application").GetNamespace("MAPI") #maps outlook variable to outlook application
-    inbox = outlook.GetDefaultFolder(6) #outlook.GetDefaultFolder(6) is the default for the application inbox
-    messages = inbox.Items #variable for items in inbox
-    
+        
     #create data files
     unread_senders_data_file_name = TEMP_DIR + "\\" + "unread_senders.txt"
     sender_data_file = open(unread_senders_data_file_name, "w+", encoding = "utf-8")
@@ -281,8 +275,6 @@ def extract_email_information_from_messages_list(all_messages_list): #to modify 
     categories_counter_int = 0
     flagged_counter_int = 0
     message_counter_int = 0
-
-    messages.Sort("[ReceivedTime]",True)
     
     for item in all_messages_list:
         try:
@@ -330,7 +322,7 @@ def extract_email_information_from_messages_list(all_messages_list): #to modify 
     generate_unread_senders_viz(unread_senders_data_file_name)
     # generate_categories_viz(categories_counter_int,categories_senders_list,)
     generate_flagged_viz(flagged_counter_int, flagged_messages_list)
-    word_cloud_extract(messages)
+    word_cloud_extract(all_messages_list)
     word_cloud_display()
     
     sender_data_file.close()
@@ -339,21 +331,21 @@ def extract_email_information_from_messages_list(all_messages_list): #to modify 
 
 
 #Generates data for undread senders visualizations
-def word_cloud_extract(messages):
+def word_cloud_extract(all_messages_list):
     
     try:
         wc_file = open(WORD_CLOUD_FILE_NAME, "w+", encoding = "utf-8") #creates data file
         i = 0
-        for item in messages:
+        for item in all_messages_list:
             if(i<50):
-                print(item.Body, file = wc_file)
+                print(item['Body'], file = wc_file)
                 i = i + 1
             else:
                 word_cloud_content_clean() #text-cleaning function called
                 wc_file.close()
     except Exception as e:
         append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
-        
+
 #Generates data for unread senders visualizations
 def unread_senders_data_gen(unread_senders_raw_list,unread_senders_unique_dict,sender_data_file):
     try:
@@ -422,12 +414,13 @@ def generate_flagged_viz(flagged_counter_int, flagged_messages_list):
             df = pd.DataFrame(flagged_messages_list)
 
         except Exception as e:
-            append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
+            print("error:" + str(e))
+            # append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
 
         try:
 
             df_styled = df.style.background_gradient() #adding a gradient based on values in cell
-            flagged_email_list_file_name = TEMP_DIR + "\\" + "flagged_email_list.png.txt"
+            flagged_email_list_file_name = TEMP_DIR + "\\" + "flagged_email_list.png"
             # Export the data frame as an image
             dfi.export(df_styled,flagged_email_list_file_name)
             
@@ -438,7 +431,8 @@ def generate_flagged_viz(flagged_counter_int, flagged_messages_list):
             # im.show()
 
         except Exception as e:
-            append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
+            # append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
+            print("error:" + str(e))
             
             #Prints some ouputs to Command Line
     print("\n")
