@@ -307,7 +307,7 @@ def extract_email_information_from_messages_list(all_messages_list): #to modify 
 
                 received_time = item['ReceivedTime']
   
-                flagged_messages_dict['received_time'] = received_time
+                flagged_messages_dict['received_time'] = received_time.strftime("%m/%d/%Y %H:%M:%S")
                 flagged_messages_list.append(flagged_messages_dict)
                 flagged_counter_int = flagged_counter_int + 1
         except Exception as e:
@@ -372,11 +372,11 @@ def generate_unread_senders_viz(unread_senders_data_file_name):
     
     #Reads unread sender data and generates visualization; saves and displays
     try:
-        sender_plot_file_name = TEMP_DIR + "\\" + "sender_plot.jpg"
         sender_table = pd.read_table(unread_senders_data_file_name, sep = '\t', header = None)
         plot = sender_table.groupby([0]).sum().plot(kind='pie', y=1, labeldistance=None, autopct='%1.0f%%', title="Senders of Unread Emails")
         plot.legend(bbox_to_anchor=(1,1)) #Sets legend details
         plot.set_ylabel("Senders") #Set label detail
+        sender_plot_file_name = TEMP_DIR + "\\" + "sender_plot.jpg"
         plot.figure.savefig(sender_plot_file_name, bbox_inches='tight') #saves plot locally
         print("\n","Top 10 Senders of Unread Emails: ", "\n", sender_table)
     except Exception as e:
@@ -414,8 +414,7 @@ def generate_flagged_viz(flagged_counter_int, flagged_messages_list):
             df = pd.DataFrame(flagged_messages_list)
 
         except Exception as e:
-            print("error:" + str(e))
-            # append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
+            append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
 
         try:
 
@@ -431,8 +430,7 @@ def generate_flagged_viz(flagged_counter_int, flagged_messages_list):
             # im.show()
 
         except Exception as e:
-            # append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
-            print("error:" + str(e))
+            append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
             
             #Prints some ouputs to Command Line
     print("\n")
