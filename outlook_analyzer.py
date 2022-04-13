@@ -7,19 +7,40 @@ import matplotlib.pyplot as plt
 import dataframe_image as dfi
 from wordcloud import WordCloud, STOPWORDS #word cloud generation library
 import re #regex library used to clean data
+import time
+from datetime import timedelta
+from datetime import date
+from dateutil.relativedelta import relativedelta
+import sys
+
+ERROR_LIST = []
+TIME_STR = time.strftime("%Y%m%d-%H%M%S")
+TEMP_DIR = "C:\WINDOWS\Temp"
+
+WORD_CLOUD_CLEANED_FILE_NAME = TEMP_DIR + "\\" + TIME_STR + "_" + "word_cloud_text_cleaned.txt"
+WORD_CLOUD_FILE_NAME = TEMP_DIR + "\\" + TIME_STR + "_" + "word_cloud_text.txt"
+WORD_CLOUD_IMAGE_FILE_NAME = TEMP_DIR + "\\" + TIME_STR + "_" + "word_cloud.jpg"
+UNREAD_SENDERS_DATA_FILE_NAME = TEMP_DIR + "\\" + TIME_STR + "_" + "unread_senders.txt"
+CATEGORIES_DATA_FILE_NAME = TEMP_DIR + "\\" + TIME_STR + "_" + "categories.txt"
+FLAGGED_EMAIL_LIST_FILE_NAME = TEMP_DIR + "\\" + TIME_STR + "_" + "flagged_email_list.png"
+SENDER_PLOT_FILE_NAME = TEMP_DIR + "\\" + TIME_STR + "_" + "sender_plot.jpg"
+CATEGORIES_IMAGE_FILE_NAME = TEMP_DIR + "\\" + TIME_STR + "_" + "categories.jpg"
+
+def append_to_error_list(function_name, error_text):
+    ERROR_LIST.append("function: " + function_name + " | " +  "error: " + error_text)
 
 #Extracts data from Outlook
-def extract_outlook_information(ERROR_LIST): #to modify as new features required
-    
+def extract_outlook_information(): #to modify as new features required
+
     #Connection to Outlook object model established
     outlook = win32com.client.Dispatch("Outlook.Application").GetNamespace("MAPI") #maps outlook variable to outlook application
     inbox = outlook.GetDefaultFolder(6) #outlook.GetDefaultFolder(6) is the default for the application inbox
     messages = inbox.Items #variable for items in inbox
-    
+
     #create data files
-    sender_data_file = open("unread_senders.txt", "w+", encoding = "utf-8")
-    categories_data_file = open("categories.txt", "w+", encoding = "utf-8")
-    
+
+    sender_data_file = open(UNREAD_SENDERS_DATA_FILE_NAME, "w+", encoding = "utf-8")
+    categories_data_file = open(CATEGORIES_DATA_FILE_NAME, "w+", encoding = "utf-8")
     
     #additional variable creation
     unread_senders_raw_list = [] #list variable to capture unread email senders with dupes
@@ -34,26 +55,26 @@ def extract_outlook_information(ERROR_LIST): #to modify as new features required
     messages.Sort("[ReceivedTime]",True)
     
     for item in tqdm(messages):
-        
+
         #check and store unread email info
         try:
             if (item.Unread == True):
                 sender = item.SenderEmailAddress
                 unread_senders_raw_list.append(sender)
         except Exception as e:
-            ERROR_LIST.append("error extracting details for unread email senders:" + str(e))
+            append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
         
-        #check and store categories info
+       #check and store categories info
         try:
             if item.Categories: #checks and stores info for emails that have been set with categories (by user)
                 categories_senders_list.append([item.SenderEmailAddress,item.Categories])
                 categories_counter_int = categories_counter_int + 1
         except Exception as e:
-            ERROR_LIST.append("error extracting details for categories:" + str(e))
-        
+            append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
+
         #check and store flagged email info
         try:
-            if (item.FlagRequest != ""): #checks and stores flag info
+            if (item.FlagRequest != ""): #checks and stores flag info - TO DO: Fix this to not get resolved flags
             
              flagged_messages_dict = {} #dict to capture flagged message info
             
@@ -70,47 +91,43 @@ def extract_outlook_information(ERROR_LIST): #to modify as new features required
              flagged_messages_list.append(flagged_messages_dict)
              
              flagged_counter_int = flagged_counter_int + 1
-        
+
         except Exception as e:
-            ERROR_LIST.append("error extracting details for flagged email:" + str(e))
+            append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
         
         message_counter_int = message_counter_int + 1
         
         if message_counter_int == 500:
             break
     
-    ERROR_LIST = unread_senders_data_gen(unread_senders_raw_list,ERROR_LIST, unread_senders_unique_dict,sender_data_file)
-    ERROR_LIST = generate_unread_senders_viz(ERROR_LIST)
-    ERROR_LIST = generate_categories_viz(categories_counter_int,categories_senders_list, ERROR_LIST)
-    ERROR_LIST = generate_flagged_viz(flagged_counter_int, flagged_messages_list, ERROR_LIST)
-    ERROR_LIST = word_cloud_extract(messages, ERROR_LIST)
-    ERROR_LIST = word_cloud_display(ERROR_LIST)
+    unread_senders_data_gen(unread_senders_raw_list, unread_senders_unique_dict,sender_data_file)
+    generate_unread_senders_viz()
+    generate_categories_viz(categories_counter_int,categories_senders_list)
+    generate_flagged_viz(flagged_counter_int, flagged_messages_list)
+    word_cloud_extract(messages)
+    word_cloud_display()
     
     sender_data_file.close()
     categories_data_file.close()
     
-    return (ERROR_LIST)
-
 #Generates data for undread senders visualizations
-def word_cloud_extract(messages, ERROR_LIST):
+def word_cloud_extract(messages):
     
     try:
-        wc_file = open("word_cloud_text.txt", "w+", encoding = "utf-8") #creates data file
+        wc_file = open(WORD_CLOUD_FILE_NAME, "w+", encoding = "utf-8") #creates data file
         i = 0
         for item in messages:
             if(i<50):
                 print(item.Body, file = wc_file)
                 i = i + 1
             else:
-                ERROR_LIST = word_cloud_content_clean(ERROR_LIST) #text-cleaning function called
+                word_cloud_content_clean() #text-cleaning function called
                 wc_file.close()
     except Exception as e:
-        ERROR_LIST.append("error when extracting word cloud data:" + str(e))
-    
-    return (ERROR_LIST)
-        
+        append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
+
 #Generates data for unread senders visualizations
-def unread_senders_data_gen(unread_senders_raw_list,ERROR_LIST, unread_senders_unique_dict,sender_data_file):
+def unread_senders_data_gen(unread_senders_raw_list,unread_senders_unique_dict,sender_data_file):
     try:
         unread_senders_unique_list = unique(unread_senders_raw_list)
         
@@ -128,28 +145,24 @@ def unread_senders_data_gen(unread_senders_raw_list,ERROR_LIST, unread_senders_u
         
         sender_data_file.close()
     except Exception as e:
-        ERROR_LIST.append("error when generating unread senders data:" + str(e))
+        append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
     
-    return (ERROR_LIST)
-
 #Generates unread senders visualizations
-def generate_unread_senders_viz(ERROR_LIST):
+def generate_unread_senders_viz():
     
     #Reads unread sender data and generates visualization; saves and displays
     try:
-        sender_table = pd.read_table('unread_senders.txt', sep = '\t', header = None)
+        sender_table = pd.read_table(UNREAD_SENDERS_DATA_FILE_NAME, sep = '\t', header = None)
         plot = sender_table.groupby([0]).sum().plot(kind='pie', y=1, labeldistance=None, autopct='%1.0f%%', title="Senders of Unread Emails")
         plot.legend(bbox_to_anchor=(1,1)) #Sets legend details
         plot.set_ylabel("Senders") #Set label detail
-        plot.figure.savefig("sender_plot.jpg", bbox_inches='tight') #saves plot locally
+        plot.figure.savefig(SENDER_PLOT_FILE_NAME, bbox_inches='tight') #saves plot locally
         print("\n","Top 10 Senders of Unread Emails: ", "\n", sender_table)
     except Exception as e:
-        ERROR_LIST.append("error when generating unread senders visual:" + str(e))
+        append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
     
-    return(ERROR_LIST)
-
 #Generates categories visualizations
-def generate_categories_viz(categories_counter_int,categories_senders_list, ERROR_LIST):
+def generate_categories_viz(categories_counter_int,categories_senders_list):
     
     try:
         #Pandas dataframe for the counted emails that are categorized
@@ -162,19 +175,17 @@ def generate_categories_viz(categories_counter_int,categories_senders_list, ERRO
         ax.axis('tight')
         ax.table(cellText=df.values, cellLoc='center', colLabels=df.columns, loc='center')
         fig.tight_layout()
-        plt.savefig("categories.jpg")
+        plt.savefig(CATEGORIES_IMAGE_FILE_NAME)
         
         #prints a tabulate table using the pandas dataframe
         print("\n")
         print(tabulate(df, headers='keys', tablefmt='fancy_grid', showindex='never'))
         print(categories_senders_list)
     except Exception as e:
-        ERROR_LIST.append("error when generating categories visualization:" + str(e))
-    
-    return(ERROR_LIST)
+        append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
 
 #Generates flagged email visualization
-def generate_flagged_viz(flagged_counter_int, flagged_messages_list, ERROR_LIST):
+def generate_flagged_viz(flagged_counter_int, flagged_messages_list):
     if (flagged_counter_int  > 0):
         try:
 
@@ -182,13 +193,13 @@ def generate_flagged_viz(flagged_counter_int, flagged_messages_list, ERROR_LIST)
             df = pd.DataFrame(flagged_messages_list)
 
         except Exception as e:
-            ERROR_LIST.append("error when creating data frame:" + str(e))
+            append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
 
         try:
 
             df_styled = df.style.background_gradient() #adding a gradient based on values in cell
             # Export the data frame as an image
-            dfi.export(df_styled,"flagged_email_list.png")
+            dfi.export(df_styled,FLAGGED_EMAIL_LIST_FILE_NAME)
             
             print("\n")
             print("Flagged Emails")
@@ -197,21 +208,19 @@ def generate_flagged_viz(flagged_counter_int, flagged_messages_list, ERROR_LIST)
             # im.show()
 
         except Exception as e:
-            ERROR_LIST.append("error when exporting data frame:" + str(e))
+            append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
             
             #Prints some ouputs to Command Line
     print("\n")
     print("Number of Flagged emails: ", flagged_counter_int)
-    
-    return(ERROR_LIST)
 
 
 #Removes hyperlink information from email body to produce more meaningful clouds
-def word_cloud_content_clean(ERROR_LIST):
+def word_cloud_content_clean():
     
     try:
-        wc_content= open("word_cloud_text.txt", "r", encoding = "utf-8").read()
-        wc_content_cleaned = open("word_cloud_text_cleaned.txt", "w+", encoding = "utf-8")
+        wc_content= open(WORD_CLOUD_FILE_NAME, "r", encoding = "utf-8").read()
+        wc_content_cleaned = open(WORD_CLOUD_CLEANED_FILE_NAME, "w+", encoding = "utf-8")
         
         #Sets hyperlink tags as indices markers
         sub1 = '<h'
@@ -236,27 +245,24 @@ def word_cloud_content_clean(ERROR_LIST):
         wc_content_cleaned.close()
     
     except Exception as e:
-        ERROR_LIST.append("error cleaning word cloud content:" + str(e))
-    
-    return(ERROR_LIST)
+        append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
 
 #Generates word cloud from cleaned email text
 def word_cloud_generate():
-    wc_content= open("word_cloud_text_cleaned.txt", "r", encoding = "utf-8").read()
+    wc_content= open(WORD_CLOUD_CLEANED_FILE_NAME, "r", encoding = "utf-8").read()
     stop_words = ["said", "email", "s", "will", "u", "re", "3A", "2F", "safelinks", "reserved", "https"] + list(STOPWORDS) #customized stopword list
     wordcloud = WordCloud(stopwords = stop_words).generate(str(wc_content))
     return(wordcloud)
 
 #Saves and displays word cloud to user
-def word_cloud_display(ERROR_LIST):
+def word_cloud_display():
     try:
         plt.clf()
         plt.imshow(word_cloud_generate())
         plt.axis('off')
-        plt.savefig('word_cloud.jpg')
+        plt.savefig(WORD_CLOUD_IMAGE_FILE_NAME)
     except Exception as e:
-        ERROR_LIST.append("error generating word cloud display: " + str(e))
-    return(ERROR_LIST)
+        append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
 
 #Identifiies unique elements within a list
 def unique (list1):
@@ -267,27 +273,21 @@ def unique (list1):
     return unique_elements_list
 
 #UI code; checks whether new extraction required and calls if necessary
-def main():
-    
-    ERROR_LIST = []
-    
+def main():  
     
     print("\n")
     print("Welcome to Outlook Analyzer!")
-    user_response = input("Would you like to extract fresh data from Outlook? (Y/N)")
+    user_input = input("Would you like to extract fresh data from Outlook? (Y/N)")
     
     #Logic to determine whether extraction is required
-    if user_response == "Y" or user_response == "y":
-        ERROR_LIST = extract_outlook_information(ERROR_LIST)
-    elif user_response == "N" or user_response == "n":
-        #placeholder code; to re-create to hook in PDF generation logic using existing files
-        try:
-            ERROR_LIST = word_cloud_display(ERROR_LIST)
-        except Exception as e:
-            ERROR_LIST.append("error extracting generating visualizations: " + str(e))     
+    if user_input == "Y" or user_input == "y":
+        # TO DO: Add more input questions for time range and max number of emails to pull
+
+        extract_outlook_information()
+
     else:
         print("Sorry, the provided response was not understood.")
-    
+
     #displays errors generated throughout program execution
     if ERROR_LIST != []:
         print("\n")
