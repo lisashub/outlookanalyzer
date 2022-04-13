@@ -56,7 +56,7 @@ def extract_outlook_information(): #to modify as new features required
     
     for item in tqdm(messages):
 
-                #check and store unread email info
+        #check and store unread email info
         try:
             if (item.Unread == True):
                 sender = item.SenderEmailAddress
