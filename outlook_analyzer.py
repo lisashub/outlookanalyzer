@@ -285,14 +285,6 @@ def main():
 
         extract_outlook_information()
 
-    # # Commented out for now - To Lisa: What is the purpose of this elif block? We need to connect to Outlook to get the data for the world cloud right?
-    # elif user_input == "N" or user_input == "n":
-    #     #placeholder code; to re-create to hook in PDF generation logic using existing files
-    #     try:
-    #         word_cloud_display()
-    #     except Exception as e:
-    #         append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
-
     else:
         print("Sorry, the provided response was not understood.")
 
