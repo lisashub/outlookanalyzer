@@ -26,11 +26,12 @@ FLAGGED_EMAIL_LIST_FILE_NAME = TEMP_DIR + "\\" + TIME_STR + "_" + "flagged_email
 SENDER_PLOT_FILE_NAME = TEMP_DIR + "\\" + TIME_STR + "_" + "sender_plot.jpg"
 CATEGORIES_IMAGE_FILE_NAME = TEMP_DIR + "\\" + TIME_STR + "_" + "categories.jpg"
 
+
 def append_to_error_list(function_name, error_text):
     ERROR_LIST.append("function: " + function_name + " | " +  "error: " + error_text)
 
 #Extracts data from Outlook
-def extract_outlook_information(): #to modify as new features required
+def extract_outlook_information(max_email_number_to_extract_input,date_start_input,date_end_input): #to modify as new features required
 
     #Connection to Outlook object model established
     outlook = win32com.client.Dispatch("Outlook.Application").GetNamespace("MAPI") #maps outlook variable to outlook application
@@ -53,8 +54,48 @@ def extract_outlook_information(): #to modify as new features required
     message_counter_int = 0
 
     messages.Sort("[ReceivedTime]",True)
+
+    # Setup end_date for month or days for date range filter
+    if date_end_input[-1] == "m":
+        month_int = int(date_end_input[0:-1])
+
+        if month_int == 0:
+            end_date = date.today()
+        else:
+           end_date = date.today() - relativedelta(months=+month_int)
+
+    elif date_end_input[-1] == "d":
+        day_int = int(date_end_input[0:-1])
+ 
+        if day_int == 0:
+            end_date = date.today()
+        else:
+            end_date = date.today() - timedelta(days=day_int)
+
+    # Setup start_date for month or days for date range filter
+    if date_start_input[-1] == "m":
+        month_int = int(date_start_input[0:-1])
+
+        if month_int == 0:
+            start_date = date.today()
+        else:
+           start_date = date.today() - relativedelta(months=+month_int)
+
+    elif date_start_input[-1] == "d":
+        day_int = int(date_start_input[0:-1])
+ 
+        if day_int == 0:
+            start_date = date.today()
+        else:
+            start_date = date.today() - timedelta(days=day_int)
+
+    # Convert time into string format for filtering messages
+    date_start_str = start_date.strftime('%m/%d/%Y %H:%M %p')
+    date_end_str = end_date.strftime('%m/%d/%Y %H:%M %p')
+
+    filtered_message = messages.Restrict("[ReceivedTime] >= '" + date_start_str + "' AND [ReceivedTime] <= '" + date_end_str + "'")
     
-    for item in tqdm(messages):
+    for item in tqdm(filtered_message):
 
         #check and store unread email info
         try:
@@ -96,10 +137,11 @@ def extract_outlook_information(): #to modify as new features required
             append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
         
         message_counter_int = message_counter_int + 1
-        
-        if message_counter_int == 500:
+
+        # Check if max number of email has been reached       
+        if message_counter_int >= int(max_email_number_to_extract_input):
             break
-    
+
     unread_senders_data_gen(unread_senders_raw_list, unread_senders_unique_dict,sender_data_file)
     generate_unread_senders_viz()
     generate_categories_viz(categories_counter_int,categories_senders_list)
@@ -274,13 +316,46 @@ def main():
     
     print("\n")
     print("Welcome to Outlook Analyzer!")
+
     user_input = input("Would you like to extract fresh data from Outlook? (Y/N)")
-    
+
     #Logic to determine whether extraction is required
     if user_input == "Y" or user_input == "y":
-        # TO DO: Add more input questions for time range and max number of emails to pull
 
-        extract_outlook_information()
+        # Check if user provided an actual integer
+        while True:
+            max_email_number_to_extract_input = input("Max number of email messages you would like to extract (between 50 and 100000)? (hit Enter for default: 500)") or 500
+
+            try:
+                int(max_email_number_to_extract_input)
+                if int(max_email_number_to_extract_input) >= 50 and int(max_email_number_to_extract_input) <= 100000:
+                    break;
+            except ValueError:
+                print("Please enter a valid integer between 50 and 100000.")
+
+        # Check if user entered in proper format for day/month
+        while True:
+            date_start_input = input("From how far back would you like to collect and analyze emails in months or days (e.g. 10m, 12d)? (Hit enter for default: 12 months ago)") or "12m"
+
+            try:
+                int(date_start_input[0:-1])
+                if date_start_input[-1] == "m" or date_start_input[-1] == "d":
+                    break;
+            except ValueError:
+                print("This is not a valid format. Please enter as '##m' or '##d' where d is for days and m is for months  (e.g. 10d or 1m")
+
+        # Check if user entered in proper format for day/month
+        while True:
+            date_end_input = input("What's the cutoff for the most recent emails you'd like to collect and analyze in months or days (e.g. 1m, 10d)? (Hit enter for default: today)") or "0m"
+
+            try:
+                int(date_end_input[0:-1])
+                if date_end_input[-1] == "m" or date_end_input[-1] == "d":
+                    break;
+            except ValueError:
+                print("This is not a valid format. Please enter as '##m' or '##d' where d is for days and m is for months  (e.g. 10d or 1m")
+
+        extract_outlook_information(max_email_number_to_extract_input,date_start_input,date_end_input)
 
     else:
         print("Sorry, the provided response was not understood.")
