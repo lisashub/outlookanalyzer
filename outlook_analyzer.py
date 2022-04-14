@@ -317,6 +317,7 @@ def unique (list1):
 #UI code; checks whether new extraction required and calls if necessary
 def main():  
     
+    # default values if user does not want to enter something
     max_email_number_to_extract_input = 500
     date_start_input = "12m"
     date_end_input = "0m"
