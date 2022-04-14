@@ -327,17 +327,18 @@ def main():
 
         # Check if user provided an actual integer
         while True:
-            max_email_number_to_extract_input = input("Max number of email messages you would like to extract (hit Enter for default: 500)?") or 500
+            max_email_number_to_extract_input = input("Max number of email messages you would like to extract (between 50 and 100000)? (hit Enter for default: 500)") or 500
 
             try:
                 int(max_email_number_to_extract_input)
-                break;
+                if int(max_email_number_to_extract_input) >= 50 and int(max_email_number_to_extract_input) <= 100000:
+                    break;
             except ValueError:
-                print("This is not an integer. Please enter a valid integer")
+                print("Please enter a valid integer between 50 and 100000.")
 
         # Check if user entered in proper format for day/month
         while True:
-            date_start_input = input("Starting time to pull email from in months or days ago (e.g. 10m, 12d) (Hit enter for default: 12 months ago)?") or "12m"
+            date_start_input = input("From how far back would you like to collect and analyze emails in months or days (e.g. 10m, 12d)? (Hit enter for default: 12 months ago)") or "12m"
 
             try:
                 int(date_start_input[0:-1])
@@ -348,7 +349,7 @@ def main():
 
         # Check if user entered in proper format for day/month
         while True:
-            date_end_input = input("Ending time to pull email from in number of months or days ago (e.g. 1m, 10d) (Hit enter for default: today)?") or "0m"
+            date_end_input = input("What's the cutoff for the most recent emails you'd like to collect and analyze in months or days (e.g. 1m, 10d)? (Hit enter for default: today)") or "0m"
 
             try:
                 int(date_end_input[0:-1])
