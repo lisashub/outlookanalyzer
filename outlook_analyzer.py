@@ -110,19 +110,17 @@ def extract_outlook_information(): #to modify as new features required
     sender_data_file.close()
     categories_data_file.close()
     
-#Generates data for undread senders visualizations
+#Extracts word cloud information from messages
 def word_cloud_extract(messages):
     
     try:
-        wc_file = open(WORD_CLOUD_FILE_NAME, "w+", encoding = "utf-8") #creates data file
-        i = 0
-        for item in messages:
-            if(i<50):
-                print(item.Body, file = wc_file)
-                i = i + 1
-            else:
-                word_cloud_content_clean() #text-cleaning function called
-                wc_file.close()
+     wc_file = open(WORD_CLOUD_FILE_NAME, "w+", encoding = "utf-8") #creates data file
+     i = 0
+     while (i<50):
+         print(messages[i].Body, file = wc_file)
+         i = i + 1
+     word_cloud_content_clean() #text-cleaning function called
+     wc_file.close()
     except Exception as e:
         append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
 
@@ -222,25 +220,24 @@ def word_cloud_content_clean():
         wc_content= open(WORD_CLOUD_FILE_NAME, "r", encoding = "utf-8").read()
         wc_content_cleaned = open(WORD_CLOUD_CLEANED_FILE_NAME, "w+", encoding = "utf-8")
         
-        #Sets hyperlink tags as indices markers
-        sub1 = '<h'
-        sub2 = '>'
+        sub1 = '<http'
+        sub2 = '<mail'
         
-        #Generates list of indices for each tag        
-        indices1 = [m.start() for m in re.finditer(sub1, wc_content)]
-        indices2 = [m.start() for m in re.finditer(sub2, wc_content[indices1[0]:])]
-      
+        indices1_link = [m.start() for m in re.finditer(sub1, wc_content)]
+        indices2_mail = [m.start() for m in re.finditer(sub2, wc_content)]
+        indices1_link.extend(indices2_mail)
+        indices1_link.sort()
         
-        #Prints first line of email text up to first hyperlink tag
+        indices2 = []
         
-        print(wc_content[0:indices1[0]],file = wc_content_cleaned)
-    
-        #Uses iteration through hyperlink tags to extract and print non-hyperlink text to new
-        #file
-        ix = 0 
-        for i in range(len(indices1)-1):
-            print(wc_content[indices2[ix]+1:indices1[ix+1]], file = wc_content_cleaned)
-            ix = ix + 1
+        for indices in indices1_link:
+                end_indices = wc_content[indices:].find('>')
+                indices2.append(end_indices+indices)
+        
+        i = 0
+        while i < len(indices2)-1:
+            print(wc_content[indices2[i]+1:indices1_link[i+1]], file = wc_content_cleaned)
+            i = i + 1
             
         wc_content_cleaned.close()
     
