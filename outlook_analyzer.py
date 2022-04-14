@@ -340,6 +340,7 @@ def main():
             except ValueError:
                 print("This is not an integer. Please enter a valid integer")
 
+        # Check if user entered in proper format for day/month
         while True:
             date_start_input = str(input("Starting time to pull email from in months or days ago (e.g. 10m, 12d) (Hit enter for default: 12 months ago)?") or date_start_input)
 
@@ -350,6 +351,7 @@ def main():
             except ValueError:
                 print("This is not a valid format. Please enter as '##m' or '##d' where d is for days and m is for months  (e.g. 10d or 1m")
 
+        # Check if user entered in proper format for day/month
         while True:
             date_end_input = input("Ending time to pull email from in number of months or days ago (e.g. 1m, 10d) (Hit enter for default: today)?") or date_end_input
 
