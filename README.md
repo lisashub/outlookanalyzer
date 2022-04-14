@@ -1,6 +1,6 @@
 # Outlook Analyzer ReadMe
 
-##Installing Dependencies
+## Installing Dependencies
 Install required packages:
 (1) Open command prompt
 (2) Navigate to the directory of the Outlook Analyzer project
