@@ -317,11 +317,6 @@ def unique (list1):
 #UI code; checks whether new extraction required and calls if necessary
 def main():  
     
-    # default values if user does not want to enter something
-    max_email_number_to_extract_input = 500
-    date_start_input = "12m"
-    date_end_input = "0m"
-
     print("\n")
     print("Welcome to Outlook Analyzer!")
 
@@ -332,7 +327,7 @@ def main():
 
         # Check if user provided an actual integer
         while True:
-            max_email_number_to_extract_input = input("Max number of email messages you would like to extract (hit Enter for default: 500)?") or max_email_number_to_extract_input
+            max_email_number_to_extract_input = input("Max number of email messages you would like to extract (hit Enter for default: 500)?") or 500
 
             try:
                 int(max_email_number_to_extract_input)
@@ -342,7 +337,7 @@ def main():
 
         # Check if user entered in proper format for day/month
         while True:
-            date_start_input = str(input("Starting time to pull email from in months or days ago (e.g. 10m, 12d) (Hit enter for default: 12 months ago)?") or date_start_input)
+            date_start_input = input("Starting time to pull email from in months or days ago (e.g. 10m, 12d) (Hit enter for default: 12 months ago)?") or "12m"
 
             try:
                 int(date_start_input[0:-1])
@@ -353,7 +348,7 @@ def main():
 
         # Check if user entered in proper format for day/month
         while True:
-            date_end_input = input("Ending time to pull email from in number of months or days ago (e.g. 1m, 10d) (Hit enter for default: today)?") or date_end_input
+            date_end_input = input("Ending time to pull email from in number of months or days ago (e.g. 1m, 10d) (Hit enter for default: today)?") or "0m"
 
             try:
                 int(date_end_input[0:-1])
