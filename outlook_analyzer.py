@@ -47,6 +47,8 @@ def extract_outlook_information(max_email_number_to_extract_input,date_start_inp
     unread_senders_raw_list = [] #list variable to capture unread email senders with dupes
     unread_senders_unique_dict = {} #dictionary variable to capture unique unread senders with counts
     categories_senders_list = [] #dictionary variable to capture category and sender information
+    category_list = [] #list variable to capture email category 
+    category_dict = {} #dictionary variable to capture email category
     flagged_messages_list = [] #list to capture flagged messege info
     
     categories_counter_int = 0
@@ -107,9 +109,10 @@ def extract_outlook_information(max_email_number_to_extract_input,date_start_inp
         
        #check and store categories info
         try:
-            if item.Categories: #checks and stores info for emails that have been set with categories (by user)
-                categories_senders_list.append([item.SenderEmailAddress,item.Categories])
-                categories_counter_int = categories_counter_int + 1
+            if item.Categories:
+                item_categories = item.Categories.split(",")
+                for category in item_categories:
+                    category_list.append(category)
         except Exception as e:
             append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
 
@@ -200,22 +203,36 @@ def generate_unread_senders_viz():
         print("\n","Top 10 Senders of Unread Emails: ", "\n", sender_table)
     except Exception as e:
         append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
+        
+def category_data_gen(category_list,category_dict,categories_data_file):
+    try:
+        unique_categories = unique(category_list) #sends category list to function named "unique" and saves list of unique values to variable
+        for category in unique_categories: #loops through unique categories and counts occurrances; saves results into category_dict
+            category_dict[category] = category_list.count(category)
+        
+        for item in category_dict.items():
+            print(item[0], "\t", item[1], file = categories_data_file)
+            categories_counter_int = categories_counter_int + 1
+            
+        categories_data_file.close()
+    except Exception as e:
+        append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
     
 #Generates categories visualizations
 def generate_categories_viz(categories_counter_int,categories_senders_list):
     
     try:
         #Pandas dataframe for the counted emails that are categorized
-        data = {'Number of email categories': [categories_counter_int]}
-        df = pd.DataFrame(data)
+        df = pd.read_csv("categories_data.txt", sep = "\t")
     
         #Removing the axis for matplotlib and creating a visual table of the counted emails that are categorize
         fig, ax = plt.subplots()
+        plt.title('Number of Email(s) Categories')
         ax.axis('off')
         ax.axis('tight')
-        ax.table(cellText=df.values, cellLoc='center', colLabels=df.columns, loc='center')
-        fig.tight_layout()
-        plt.savefig(CATEGORIES_IMAGE_FILE_NAME)
+        table = ax.table(cellText=df.values, cellLoc='center', colLabels=df.columns, loc='center')
+        table.scale(1, 2)
+        plt.savefig('Email_Category.png')  # saves plot locally,
         
         #prints a tabulate table using the pandas dataframe
         print("\n")
