@@ -215,8 +215,8 @@ def category_data_gen(categories_counter_int,category_list,category_dict,categor
             print(item[0], "\t", item[1], file = categories_data_file)
             categories_counter_int = categories_counter_int + 1
             
-            print('\n')
-            print('Number of categories:', len(unique_categories))  # print total number or emails categorize
+        print('\n')
+        print('Number of categories:', len(unique_categories))  # print total number or emails categorize
             
         categories_data_file.close()
     except Exception as e:
