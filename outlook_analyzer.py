@@ -148,7 +148,7 @@ def extract_outlook_information(max_email_number_to_extract_input,date_start_inp
     unread_senders_data_gen(unread_senders_raw_list, unread_senders_unique_dict,sender_data_file)
     generate_unread_senders_viz()
     category_data_gen(categories_counter_int, category_list, category_dict, categories_data_file)
-    generate_categories_viz(categories_counter_int,categories_senders_list)
+    generate_categories_viz()
     generate_flagged_viz(flagged_counter_int, flagged_messages_list)
     word_cloud_extract(messages)
     word_cloud_display()
@@ -240,7 +240,6 @@ def generate_categories_viz():
         #prints a tabulate table using the pandas dataframe
         print("\n")
         print(tabulate(df, headers='keys', tablefmt='fancy_grid', showindex='never'))
-        print(categories_senders_list)
         
     except Exception as e:
         append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
