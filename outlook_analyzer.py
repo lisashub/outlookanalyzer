@@ -147,6 +147,7 @@ def extract_outlook_information(max_email_number_to_extract_input,date_start_inp
 
     unread_senders_data_gen(unread_senders_raw_list, unread_senders_unique_dict,sender_data_file)
     generate_unread_senders_viz()
+    category_data_gen(categories_counter_int, category_list, category_dict, categories_data_file)
     generate_categories_viz(categories_counter_int,categories_senders_list)
     generate_flagged_viz(flagged_counter_int, flagged_messages_list)
     word_cloud_extract(messages)
@@ -204,7 +205,7 @@ def generate_unread_senders_viz():
     except Exception as e:
         append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
         
-def category_data_gen(category_list,category_dict,categories_data_file):
+def category_data_gen(categories_counter_int,category_list,category_dict,categories_data_file):
     try:
         unique_categories = unique(category_list) #sends category list to function named "unique" and saves list of unique values to variable
         for category in unique_categories: #loops through unique categories and counts occurrances; saves results into category_dict
@@ -214,13 +215,15 @@ def category_data_gen(category_list,category_dict,categories_data_file):
             print(item[0], "\t", item[1], file = categories_data_file)
             categories_counter_int = categories_counter_int + 1
             
+            print('\n')
+            print('Number of categories:', len(unique_categories))  # print total number or emails categorize
+            
         categories_data_file.close()
     except Exception as e:
         append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
     
 #Generates categories visualizations
-def generate_categories_viz(categories_counter_int,categories_senders_list):
-    
+def generate_categories_viz():
     try:
         #Pandas dataframe for the counted emails that are categorized
         df = pd.read_csv(CATEGORIES_DATA_FILE_NAME, sep = "\t")
@@ -238,6 +241,7 @@ def generate_categories_viz(categories_counter_int,categories_senders_list):
         print("\n")
         print(tabulate(df, headers='keys', tablefmt='fancy_grid', showindex='never'))
         print(categories_senders_list)
+        
     except Exception as e:
         append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
 
