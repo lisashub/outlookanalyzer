@@ -1,4 +1,3 @@
-
 import win32com.client #core extraction library
 from tqdm import tqdm # library to display extraction progress bar
 import pandas as pd # library to tabulate data and generate plot/image
