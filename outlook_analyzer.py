@@ -223,7 +223,7 @@ def generate_categories_viz(categories_counter_int,categories_senders_list):
     
     try:
         #Pandas dataframe for the counted emails that are categorized
-        df = pd.read_csv("categories_data.txt", sep = "\t")
+        df = pd.read_csv('CATEGORIES_DATA_FILE_NAME', sep = "\t")
     
         #Removing the axis for matplotlib and creating a visual table of the counted emails that are categorize
         fig, ax = plt.subplots()
@@ -232,7 +232,7 @@ def generate_categories_viz(categories_counter_int,categories_senders_list):
         ax.axis('tight')
         table = ax.table(cellText=df.values, cellLoc='center', colLabels=df.columns, loc='center')
         table.scale(1, 2)
-        plt.savefig('Email_Category.png')  # saves plot locally,
+        plt.savefig('CATEGORIES_IMAGE_FILE_NAME')  # saves plot locally,
         
         #prints a tabulate table using the pandas dataframe
         print("\n")
