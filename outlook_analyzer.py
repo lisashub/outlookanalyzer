@@ -9,6 +9,7 @@ import re #regex library used to clean data
 import time
 from datetime import timedelta
 from datetime import date
+from datetime import datetime
 from dateutil.relativedelta import relativedelta
 import sys
 
@@ -24,7 +25,7 @@ CATEGORIES_DATA_FILE_NAME = TEMP_DIR + "\\" + TIME_STR + "_" + "categories.txt"
 FLAGGED_EMAIL_LIST_FILE_NAME = TEMP_DIR + "\\" + TIME_STR + "_" + "flagged_email_list.png"
 SENDER_PLOT_FILE_NAME = TEMP_DIR + "\\" + TIME_STR + "_" + "sender_plot.jpg"
 CATEGORIES_IMAGE_FILE_NAME = TEMP_DIR + "\\" + TIME_STR + "_" + "categories.jpg"
-
+COUNTING_IMAGE_FILE_NAME = TEMP_DIR + "\\" + TIME_STR + "_" + "counting.jpg"
 
 def append_to_error_list(function_name, error_text):
     ERROR_LIST.append("function: " + function_name + " | " +  "error: " + error_text)
@@ -47,12 +48,15 @@ def extract_outlook_information(max_email_number_to_extract_input,date_start_inp
     unread_senders_unique_dict = {} #dictionary variable to capture unique unread senders with counts
     categories_senders_list = [] #dictionary variable to capture category and sender information
     category_list = [] #list variable to capture email category 
-    category_dict = {} #dictionary variable to capture email category
     flagged_messages_list = [] #list to capture flagged messege info
-    
+    counting_dict = {} #dictionary variable to capture different counts
+
     categories_counter_int = 0
+    number_of_times_categories_assigned_counter_int = 0
     flagged_counter_int = 0
     message_counter_int = 0
+    message_read_counter_int = 0
+    message_unread_counter_int = 0
 
     messages.Sort("[ReceivedTime]",True)
 
@@ -61,17 +65,18 @@ def extract_outlook_information(max_email_number_to_extract_input,date_start_inp
         month_int = int(date_end_input[0:-1])
 
         if month_int == 0:
-            end_date = date.today()
+            # end_date = date.today()
+            end_date = datetime.now()
         else:
-           end_date = date.today() - relativedelta(months=+month_int)
+           end_date = datetime.now() - relativedelta(months=+month_int)
 
     elif date_end_input[-1] == "d":
         day_int = int(date_end_input[0:-1])
  
         if day_int == 0:
-            end_date = date.today()
+            end_date = datetime.now()
         else:
-            end_date = date.today() - timedelta(days=day_int)
+            end_date = datetime.now() - timedelta(days=day_int)
 
     # Setup start_date for month or days for date range filter
     if date_start_input[-1] == "m":
@@ -100,9 +105,13 @@ def extract_outlook_information(max_email_number_to_extract_input,date_start_inp
 
         #check and store unread email info
         try:
-            if (item.Unread == True):
+            if (item.UnRead == True):
                 sender = item.SenderEmailAddress
                 unread_senders_raw_list.append(sender)
+                message_unread_counter_int = message_unread_counter_int + 1
+            else:
+                message_read_counter_int = message_read_counter_int + 1
+
         except Exception as e:
             append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
         
@@ -110,8 +119,10 @@ def extract_outlook_information(max_email_number_to_extract_input,date_start_inp
         try:
             if item.Categories:
                 item_categories = item.Categories.split(",")
+                categories_counter_int = categories_counter_int + 1
                 for category in item_categories:
-                    category_list.append(category)
+                    category_list.append(category.strip())
+                    number_of_times_categories_assigned_counter_int = number_of_times_categories_assigned_counter_int + 1
         except Exception as e:
             append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
 
@@ -144,14 +155,28 @@ def extract_outlook_information(max_email_number_to_extract_input,date_start_inp
         if message_counter_int >= int(max_email_number_to_extract_input):
             break
 
+    unique_category_count_int = len(unique(category_list))
+
+    # Add the various count metrics to counting_dict
+    counting_dict['total messages'] = message_counter_int
+    counting_dict['total unread message'] = message_unread_counter_int
+    counting_dict['total read messages'] = message_read_counter_int
+    counting_dict['total flagged messages'] = flagged_counter_int
+    counting_dict['total categorized messages'] = categories_counter_int
+    counting_dict['total times categories used'] = number_of_times_categories_assigned_counter_int
+    counting_dict['total unique categories'] = unique_category_count_int
+    # TO DO: will add a counter for flagged vs todo items when other branch is merged
+    # also add number of resolved flags
+
+    generate_count_viz(counting_dict, date_start_str, date_end_str)
     unread_senders_data_gen(unread_senders_raw_list, unread_senders_unique_dict,sender_data_file)
     generate_unread_senders_viz()
-    category_data_gen(categories_counter_int, category_list, category_dict, categories_data_file)
+    category_data_gen(category_list, categories_data_file)
     generate_categories_viz()
     generate_flagged_viz(flagged_counter_int, flagged_messages_list)
     word_cloud_extract(messages)
     word_cloud_display()
-    
+
     sender_data_file.close()
     categories_data_file.close()
     
@@ -204,12 +229,17 @@ def generate_unread_senders_viz():
     except Exception as e:
         append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
         
-def category_data_gen(categories_counter_int,category_list,category_dict,categories_data_file):
+def category_data_gen(category_list,categories_data_file):
+
+    category_dict = {} #dictionary variable to capture email category
+
     try:
         unique_categories = unique(category_list) #sends category list to function named "unique" and saves list of unique values to variable
+
         for category in unique_categories: #loops through unique categories and counts occurrances; saves results into category_dict
             category_dict[category] = category_list.count(category)
         
+        categories_counter_int = 0
         for item in category_dict.items():
             print(item[0], "\t", item[1], file = categories_data_file)
             categories_counter_int = categories_counter_int + 1
@@ -220,7 +250,32 @@ def category_data_gen(categories_counter_int,category_list,category_dict,categor
         categories_data_file.close()
     except Exception as e:
         append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
+
+#Generates counting visualizations
+def generate_count_viz(counting_dict, date_start_str, date_end_str):
+    try:
+        #Pandas dataframe for the counted emails that are categorized
+        df = pd.DataFrame(counting_dict.items(), columns=['Item', 'Count'])
     
+        title_str = "Counts (" + "Start: " + date_start_str + " | End: " + date_end_str + ")"
+
+        #Removing the axis for matplotlib and creating a visual table of the counted emails that are categorize
+        fig, ax = plt.subplots()
+        plt.title(title_str)
+        ax.axis('off')
+        ax.axis('tight')
+        table = ax.table(cellText=df.values, cellLoc='center', colLabels=df.columns, loc='center')
+        table.scale(1, 2)
+        plt.savefig(COUNTING_IMAGE_FILE_NAME)  # saves plot locally,
+        
+        #prints a tabulate table using the pandas dataframe
+        print("\n")
+        print(title_str)
+        print(tabulate(df, headers='keys', tablefmt='fancy_grid', showindex='never'))
+        
+    except Exception as e:
+        append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
+
 #Generates categories visualizations
 def generate_categories_viz():
     try:
