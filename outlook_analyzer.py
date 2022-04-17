@@ -133,7 +133,7 @@ def extract_outlook_information(max_email_number_to_extract_input,date_start_inp
 
         # Tasks that do not come in as email only have subject
         try:
-            subject = task.subject
+            subject = task.Subject
             # Remove invisible white space / pointers that pandas cannot handle
             clean_subject = cleanup(subject)           
             subject = [clean_subject.encode("utf-8").strip()]
