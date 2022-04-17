@@ -23,7 +23,7 @@ pdf.open()
 
 
 # Code for cleaning directory
-dir_name = 'C:/Users/Jonathan/PycharmProjects/pythonProject' # User's directory path
+dir_name = '' # User's directory path
 dir_list = os.listdir(dir_name) #returns the list of all files and directories in the specified path
 
 # Goes through directory and removes/cleans the files with specified extensions (i.e .txt, .tmp, .png, etc.)
