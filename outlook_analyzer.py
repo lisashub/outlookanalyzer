@@ -105,7 +105,7 @@ def extract_outlook_information(max_email_number_to_extract_input,date_start_inp
 
         #check and store unread email info
         try:
-            if (item.UnRead == True):
+            if (item.Unread == True):
                 sender = item.SenderEmailAddress
                 unread_senders_raw_list.append(sender)
                 message_unread_counter_int = message_unread_counter_int + 1
