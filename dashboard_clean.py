@@ -18,7 +18,7 @@ pdf.image('sender_plot.jpg', x=0, y=75, w=210) # Puts in and positions send plot
 pdf.image('Email_Category.png', x=0, y=130, w=210/2)  # Puts in and positions category
 pdf.image('flagged_email_list.png', x=105, y=130, w=210/2) # Puts in and positions flagged email data
 pdf.image('word_cloud.jpg', x=0, y=200, w=210, h=90) # Puts in and positions word cloud
-pdf.output('dashboard.pdf', 'F')  # saves pdf into temp file
+pdf.output('dashboard.pdf', 'F')  # saves pdf into local file
 pdf.open()
 
 
