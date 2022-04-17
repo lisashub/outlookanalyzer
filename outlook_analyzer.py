@@ -22,7 +22,8 @@ WORD_CLOUD_FILE_NAME = TEMP_DIR + "\\" + TIME_STR + "_" + "word_cloud_text.txt"
 WORD_CLOUD_IMAGE_FILE_NAME = TEMP_DIR + "\\" + TIME_STR + "_" + "word_cloud.jpg"
 UNREAD_SENDERS_DATA_FILE_NAME = TEMP_DIR + "\\" + TIME_STR + "_" + "unread_senders.txt"
 CATEGORIES_DATA_FILE_NAME = TEMP_DIR + "\\" + TIME_STR + "_" + "categories.txt"
-FLAGGED_EMAIL_LIST_FILE_NAME = TEMP_DIR + "\\" + TIME_STR + "_" + "flagged_email_list.png"
+FLAGGED_EMAIL_DATA_FILE_NAME = TEMP_DIR + "\\" + TIME_STR + "_" + "flagged_email.txt"
+FLAGGED_EMAIL_IMAGE_FILE_NAME = TEMP_DIR + "\\" + TIME_STR + "_" + "flagged_email_list.png"
 SENDER_PLOT_FILE_NAME = TEMP_DIR + "\\" + TIME_STR + "_" + "sender_plot.jpg"
 CATEGORIES_IMAGE_FILE_NAME = TEMP_DIR + "\\" + TIME_STR + "_" + "categories.jpg"
 COUNTING_IMAGE_FILE_NAME = TEMP_DIR + "\\" + TIME_STR + "_" + "counting.jpg"
@@ -42,6 +43,7 @@ def extract_outlook_information(max_email_number_to_extract_input,date_start_inp
 
     sender_data_file = open(UNREAD_SENDERS_DATA_FILE_NAME, "w+", encoding = "utf-8")
     categories_data_file = open(CATEGORIES_DATA_FILE_NAME, "w+", encoding = "utf-8")
+    flagged_email_data_file = open(FLAGGED_EMAIL_DATA_FILE_NAME, "w+", encoding = "utf-8")
     
     #additional variable creation
     unread_senders_raw_list = [] #list variable to capture unread email senders with dupes
@@ -105,12 +107,17 @@ def extract_outlook_information(max_email_number_to_extract_input,date_start_inp
 
         #check and store unread email info
         try:
-            if (item.Unead == True):
-                sender = item.SenderEmailAddress
+            if (item.UnRead == True):
+
+                if item.Class == 43:
+                    if item.SenderEmailType == "EX":
+                        sender = item.Sender.GetExchangeUser().PrimarySmtpAddress
+                    else:
+                        sender = item.SenderEmailAddress
+                else:
+                    sender = item.SenderEmailAddress
+    
                 unread_senders_raw_list.append(sender)
-                message_unread_counter_int = message_unread_counter_int + 1
-            else:
-                message_read_counter_int = message_read_counter_int + 1
 
         except Exception as e:
             append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
@@ -126,29 +133,66 @@ def extract_outlook_information(max_email_number_to_extract_input,date_start_inp
         except Exception as e:
             append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
 
-        #check and store flagged email info
+    todo_folder = outlook.GetDefaultFolder(28) #outlook.GetDefaultFolder(28) is for the todo/flagged items
+
+    todo_items = todo_folder.Items
+    tasks = todo_items.Restrict("[Complete] = FALSE")
+
+    print("Extracting tasks/flagged items:")
+    for task in tqdm(tasks):      
+
+        #check and store flagged email/tasks/todo
+
+        flagged_messages_dict = {} #dict to capture flagged message info (create a dict for each task)
+
+        # Assign value and add to dict for several attributes
+
+        # Tasks that do not come in as email only have subject
         try:
-            if (item.FlagRequest != ""): #checks and stores flag info - TO DO: Fix this to not get resolved flags
-            
-             flagged_messages_dict = {} #dict to capture flagged message info
-            
-             # Assign value and add to dict
-             subject = item.subject
-             flagged_messages_dict['subject'] = subject
-
-             sender_email = item.SenderEmailAddress
-             flagged_messages_dict['sender_email'] = sender_email
-
-             received_time = item.ReceivedTime.strftime("%m/%d/%Y %H:%M:%S")
-             flagged_messages_dict['received_time'] = received_time
-
-             flagged_messages_list.append(flagged_messages_dict)
-             
-             flagged_counter_int = flagged_counter_int + 1
-
+            subject = task.Subject
+            # Remove invisible white space / pointers that pandas cannot handle
+            clean_subject = cleanup(subject)           
+            subject = [clean_subject.encode("utf-8").strip()]
+            flagged_messages_dict['subject'] = subject
         except Exception as e:
             append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
+
+        try:
+            item_class = task.Class
+            flagged_messages_dict['Class'] = item_class
+        except Exception as e:
+            append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
+
+        # class 43 is standard MailItem. ReportItem/MeetingItem are a different class.
+        if task.Class == 43:
         
+            try:
+                received_time = task.ReceivedTime.strftime("%m/%d/%Y %H:%M:%S")
+                flagged_messages_dict['ReceivedTime'] = received_time
+            except Exception as e:
+                append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
+
+            # Do not want the long exchange details, for "EX" SenderEmailType, get the PrimarySmtpAddress
+            if task.SenderEmailType == "EX":
+                try:
+                    sender_email = task.Sender.GetExchangeUser().PrimarySmtpAddress
+                except Exception as e:
+                    append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
+            else:
+                try:
+                    sender_email = task.SenderEmailAddress
+                except Exception as e:
+                    append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
+
+            flagged_messages_dict['SenderEmailAddress'] = sender_email
+
+        # Add the attributes for each task to the flagged_messages_dict
+        flagged_messages_list.append(flagged_messages_dict)
+
+        # Keep track of the numbers of tasks/flagged items
+        flagged_counter_int = flagged_counter_int + 1
+
+       
         message_counter_int = message_counter_int + 1
 
         # Check if max number of email has been reached       
@@ -173,10 +217,12 @@ def extract_outlook_information(max_email_number_to_extract_input,date_start_inp
     generate_unread_senders_viz()
     category_data_gen(category_list, categories_data_file)
     generate_categories_viz()
-    generate_flagged_viz(flagged_counter_int, flagged_messages_list)
+    flagged_email_data_gen(flagged_messages_list, flagged_email_data_file)
+    generate_flagged_viz(flagged_counter_int)
     word_cloud_extract(messages)
     word_cloud_display()
 
+    # ??? Is needed to close the files again here when they are also being closed in their respective functions?
     sender_data_file.close()
     categories_data_file.close()
     
@@ -228,11 +274,29 @@ def generate_unread_senders_viz():
         print("\n","Top 10 Senders of Unread Emails: ", "\n", sender_table)
     except Exception as e:
         append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
-        
+
+def flagged_email_data_gen(flagged_messages_list, flagged_email_data_file):
+
+    # Have to generate a text file to decode the utf8 data
+    try:
+        print("Subject","\t",'SenderEmailAddress',"\t", 'ReceivedTime', file = flagged_email_data_file)
+
+        for item in flagged_messages_list:
+
+            if item['Class'] == 43: 
+                print('\n'.join(s.decode('utf-8', 'ignore') for s in item['subject']),"\t",item['SenderEmailAddress'], "\t", item['ReceivedTime'], file = flagged_email_data_file)
+            else:
+                print('\n'.join(s.decode('utf-8', 'ignore') for s in item['subject']),"\t", "-", "\t", "-", file = flagged_email_data_file)
+
+        flagged_email_data_file.close()
+    except Exception as e:
+        append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
+
+
 def category_data_gen(category_list,categories_data_file):
 
     category_dict = {} #dictionary variable to capture email category
-
+    
     try:
         unique_categories = unique(category_list) #sends category list to function named "unique" and saves list of unique values to variable
 
@@ -289,7 +353,7 @@ def generate_categories_viz():
         ax.axis('tight')
         table = ax.table(cellText=df.values, cellLoc='center', colLabels=df.columns, loc='center')
         table.scale(1, 2)
-        plt.savefig(CATEGORIES_IMAGE_FILE_NAME)  # saves plot locally,
+        plt.savefig(CATEGORIES_IMAGE_FILE_NAME)  # saves plot
         
         #prints a tabulate table using the pandas dataframe
         print("\n")
@@ -298,28 +362,43 @@ def generate_categories_viz():
     except Exception as e:
         append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
 
+# Function to remove certain utf8 characters from strings
+def cleanup(inp):
+    new_char = ""
+    for char in inp:
+        if char not in ["\u202a", "\u202c"]:
+            new_char += char
+    return new_char
+
 #Generates flagged email visualization
-def generate_flagged_viz(flagged_counter_int, flagged_messages_list):
+def generate_flagged_viz(flagged_counter_int):
     if (flagged_counter_int  > 0):
         try:
 
             # Create a dataframe from the list of dictionaries
-            df = pd.DataFrame(flagged_messages_list)
+            df = pd.read_csv(FLAGGED_EMAIL_DATA_FILE_NAME, sep = "\t")
+
+
+            #Removing the axis for matplotlib and creating a visual table of the counted emails that are categorize
+            fig, ax = plt.subplots()
+            plt.title('Flagged Email(s) / Todo')
+            ax.axis('off')
+            ax.axis('tight')
+            table = ax.table(cellText=df.values, cellLoc='center', colLabels=df.columns, loc='center')
+            table.scale(2, 2)
+            plt.savefig(FLAGGED_EMAIL_IMAGE_FILE_NAME, dpi=150)  # saves plot
+
+            # Old method whichs works but not exactly what I was looking for
+            # dfi.export(df, FLAGGED_EMAIL_IMAGE_FILE_NAME)
 
         except Exception as e:
             append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
 
         try:
 
-            df_styled = df.style.background_gradient() #adding a gradient based on values in cell
-            # Export the data frame as an image
-            dfi.export(df_styled,FLAGGED_EMAIL_LIST_FILE_NAME)
-            
             print("\n")
-            print("Flagged Emails")
-            print(tabulate(df, headers = 'keys', tablefmt = 'psql'))
-            # im = Image.open("flagged_email_list.png") #displays plot in default photo viewer; can be moved to web app
-            # im.show()
+            print("Flagged Emails and To Do Items")
+            print(tabulate(df, headers = 'keys', tablefmt = 'fancy_grid',showindex='never'))
 
         except Exception as e:
             append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
