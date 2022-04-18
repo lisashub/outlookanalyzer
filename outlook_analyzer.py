@@ -1,21 +1,23 @@
 import win32com.client #core extraction library
-from tqdm import tqdm # library to display extraction progress bar
+import sys
+import os
 import pandas as pd # library to tabulate data and generate plot/image
-from tabulate import tabulate
 import matplotlib.pyplot as plt
 import dataframe_image as dfi
-from wordcloud import WordCloud, STOPWORDS #word cloud generation library
 import re #regex library used to clean data
 import time
+from tqdm import tqdm # library to display extraction progress bar
+from tabulate import tabulate
+from wordcloud import WordCloud, STOPWORDS #word cloud generation library
 from datetime import timedelta
 from datetime import date
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
-import sys
 
 ERROR_LIST = []
 TIME_STR = time.strftime("%Y%m%d-%H%M%S")
 TEMP_DIR = "C:\WINDOWS\Temp"
+DIR_LIST = os.listdir(TEMP_DIR) # Puts Temp directory as a list
 
 WORD_CLOUD_CLEANED_FILE_NAME = TEMP_DIR + "\\" + TIME_STR + "_" + "word_cloud_text_cleaned.txt"
 WORD_CLOUD_FILE_NAME = TEMP_DIR + "\\" + TIME_STR + "_" + "word_cloud_text.txt"
@@ -519,6 +521,19 @@ def main():
         print("Some errors occurred during execution:")
         for item in ERROR_LIST:
             print(item)
+            
+  # Checks if user wants to clean their Temp directory
+    while True:
+        dir_option = input('Would you like to clean your directory? (y/n):')
+        if dir_option == 'y' or dir_option == 'Y':
+            for item in DIR_LIST:
+                if item.endswith('.txt') or item.endswith('.png') or item.endswith('.jpg'):
+                    os.remove(os.path.join(TEMP_DIR, item))
+            print('Directory cleaned')
+            break;
+        elif dir_option == 'n' or dir_option == 'N':
+            pass
+            break;    
 
 if __name__ == "__main__":
     main()
