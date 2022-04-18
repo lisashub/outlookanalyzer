@@ -146,7 +146,7 @@ def extract_outlook_information(max_email_number_to_extract_input,date_start_inp
 
         #check and store emails marked as important
         if (item.Importance == 2 and item.Class == 43):
-            important_messages_dict = {} #dict to capture important message info (create a dict for each task)
+            important_messages_dict = {} #dict to capture important message info (create a dict for each email)
 
             try:
                 subject = item.Subject
