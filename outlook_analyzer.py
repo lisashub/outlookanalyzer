@@ -14,21 +14,39 @@ from datetime import date
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 
+#Creates Outlook Analyzer folder into Temp directory
+olafolder = 'C:\WINDOWS\Temp\Outlook Analyzer'
+if not os.path.exists(olafolder):
+    os.makedirs(olafolder)
+else:
+    pass;
+
 ERROR_LIST = []
-TIME_STR = time.strftime("%Y%m%d-%H%M%S")
-TEMP_DIR = "C:\WINDOWS\Temp"
+TEMP_DIR = "C:\WINDOWS\Temp\Outlook Analyzer"
 DIR_LIST = os.listdir(TEMP_DIR) # Puts Temp directory as a list
 
-WORD_CLOUD_CLEANED_FILE_NAME = TEMP_DIR + "\\" + TIME_STR + "_" + "word_cloud_text_cleaned.txt"
-WORD_CLOUD_FILE_NAME = TEMP_DIR + "\\" + TIME_STR + "_" + "word_cloud_text.txt"
-WORD_CLOUD_IMAGE_FILE_NAME = TEMP_DIR + "\\" + TIME_STR + "_" + "word_cloud.jpg"
-UNREAD_SENDERS_DATA_FILE_NAME = TEMP_DIR + "\\" + TIME_STR + "_" + "unread_senders.txt"
-CATEGORIES_DATA_FILE_NAME = TEMP_DIR + "\\" + TIME_STR + "_" + "categories.txt"
-FLAGGED_EMAIL_DATA_FILE_NAME = TEMP_DIR + "\\" + TIME_STR + "_" + "flagged_email.txt"
-FLAGGED_EMAIL_IMAGE_FILE_NAME = TEMP_DIR + "\\" + TIME_STR + "_" + "flagged_email_list.png"
-SENDER_PLOT_FILE_NAME = TEMP_DIR + "\\" + TIME_STR + "_" + "sender_plot.jpg"
-CATEGORIES_IMAGE_FILE_NAME = TEMP_DIR + "\\" + TIME_STR + "_" + "categories.jpg"
-COUNTING_IMAGE_FILE_NAME = TEMP_DIR + "\\" + TIME_STR + "_" + "counting.jpg"
+WORD_CLOUD_CLEANED_FILE_NAME = TEMP_DIR + "\\" + "word_cloud_text_cleaned.txt"
+WORD_CLOUD_FILE_NAME = TEMP_DIR + "\\" +  "word_cloud_text.txt"
+WORD_CLOUD_IMAGE_FILE_NAME = TEMP_DIR + "\\" +  "word_cloud.jpg"
+UNREAD_SENDERS_DATA_FILE_NAME = TEMP_DIR + "\\" + "unread_senders.txt"
+CATEGORIES_DATA_FILE_NAME = TEMP_DIR + "\\" + "categories.txt"
+FLAGGED_EMAIL_DATA_FILE_NAME = TEMP_DIR + "\\" + "Flagged_email.txt"
+FLAGGED_EMAIL_IMAGE_FILE_NAME = TEMP_DIR + "\\" + "Flagged_email_list.png"
+SENDER_PLOT_FILE_NAME = TEMP_DIR + "\\" + "sender_plot.jpg"
+CATEGORIES_IMAGE_FILE_NAME = TEMP_DIR + "\\" + "categories.jpg"
+
+# Checks if user wants to clean their Temp directory
+while True:
+    dir_option = input('Would you like to clean your directory? (y/n):')
+    if dir_option == 'y' or dir_option == 'Y':
+        for item in dir_list:
+            if item.endswith('.txt') or item.endswith('.png') or item.endswith('.jpg'):
+                os.remove(os.path.join(TEMP_DIR, item))
+        print('Directory cleaned')
+        break;
+    elif dir_option == 'n' or dir_option == 'N':
+        pass
+        break;
 
 def append_to_error_list(function_name, error_text):
     ERROR_LIST.append("function: " + function_name + " | " +  "error: " + error_text)
@@ -521,19 +539,7 @@ def main():
         print("Some errors occurred during execution:")
         for item in ERROR_LIST:
             print(item)
-            
-  # Checks if user wants to clean their Temp directory
-    while True:
-        dir_option = input('Would you like to clean your directory? (y/n):')
-        if dir_option == 'y' or dir_option == 'Y':
-            for item in DIR_LIST:
-                if item.endswith('.txt') or item.endswith('.png') or item.endswith('.jpg'):
-                    os.remove(os.path.join(TEMP_DIR, item))
-            print('Directory cleaned')
-            break;
-        elif dir_option == 'n' or dir_option == 'N':
-            pass
-            break;    
+           
 
 if __name__ == "__main__":
     main()
