@@ -29,11 +29,16 @@ CATEGORIES_DATA_FILE_NAME = TEMP_DIR + "\\" + TIME_STR + "_" + "categories.txt"
 FLAGGED_EMAIL_DATA_FILE_NAME = TEMP_DIR + "\\" + TIME_STR + "_" + "flagged_email.txt"
 IMPORTANT_EMAIL_DATA_FILE_NAME = TEMP_DIR + "\\" + TIME_STR + "_" + "important_email.txt"
 
+
 #Global image files created
 UNREAD_SENDERS_IMAGE_FILE_NAME = TEMP_DIR + "\\" + TIME_STR + "_" + "sender_plot.jpg"
 CATEGORIES_IMAGE_FILE_NAME = TEMP_DIR + "\\" + TIME_STR + "_" + "categories.jpg"
 FLAGGED_EMAIL_IMAGE_FILE_NAME = TEMP_DIR + "\\" + TIME_STR + "_" + "flagged_email_list.png"
 IMPORTANT_EMAIL_IMAGE_FILE_NAME = TEMP_DIR + "\\" + TIME_STR + "_" + "important_email_list.png"
+FLAGGED_EMAIL_IMAGE_FILE_NAME = TEMP_DIR + "\\" + TIME_STR + "_" + "flagged_email_list.png"
+IMPORTANT_EMAIL_IMAGE_FILE_NAME = TEMP_DIR + "\\" + TIME_STR + "_" + "important_email_list.png"
+SENDER_PLOT_FILE_NAME = TEMP_DIR + "\\" + TIME_STR + "_" + "sender_plot.jpg"
+CATEGORIES_IMAGE_FILE_NAME = TEMP_DIR + "\\" + TIME_STR + "_" + "categories.jpg"
 COUNTING_IMAGE_FILE_NAME = TEMP_DIR + "\\" + TIME_STR + "_" + "counting.jpg"
 
 #Function to generate a list of errors that have occurred during progam execution; printed at end of run
@@ -56,6 +61,7 @@ def extract_outlook_information(max_email_number_to_extract_input,date_start_inp
     flagged_email_data_file = open(FLAGGED_EMAIL_DATA_FILE_NAME, "w+", encoding = "utf-8")
     important_email_data_file = open(IMPORTANT_EMAIL_DATA_FILE_NAME, "w+", encoding = "utf-8")
     
+
     #Creates intermediate list and dictionary structure variable to store extracted information
     category_list = []
     counting_dict = {}
@@ -72,6 +78,8 @@ def extract_outlook_information(max_email_number_to_extract_input,date_start_inp
     message_read_counter_int = 0
     message_unread_counter_int = 0
     number_of_times_categories_assigned_counter_int = 0
+
+
 
     #Establishes how many months or days back the script should look for emails
     if date_end_input[-1] == "m": #Value will be "m" if user enters range in months
@@ -145,7 +153,8 @@ def extract_outlook_information(max_email_number_to_extract_input,date_start_inp
         #Assigned category metric logic 
         try:
             if inbox_item.Categories:
-                item_categories = inbox_item.Categories.split(",")
+                item_categories = inbox_item.Categories.split(",") #Splits multiple categories if applicable
+
                 categories_counter_int = categories_counter_int + 1
                 for category in item_categories:
                     category_list.append(category.strip())
@@ -160,11 +169,13 @@ def extract_outlook_information(max_email_number_to_extract_input,date_start_inp
                 subject = inbox_item.Subject
                 clean_subject = cleanup(subject) #Removes invisible white space/pointers that pandas cannot handle
                 subject = [clean_subject.encode("utf-8").strip()] #Encodes subject as utf8 to handle special characters
+
                 important_messages_dict['subject'] = subject
             except Exception as e:
                 append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
         
             try:
+
                 email_class = inbox_item.Class
                 important_messages_dict['Class'] = email_class
             except Exception as e:
@@ -195,10 +206,9 @@ def extract_outlook_information(max_email_number_to_extract_input,date_start_inp
 
             important_count_int = important_count_int + 1
         
+        message_counter_int = message_counter_int + 1
         #End of inbox item iteration loop
         
-        message_counter_int = message_counter_int + 1
-
         #Checks if max number of emails has been reached       
         if message_counter_int >= int(max_email_number_to_extract_input):
             break
@@ -225,8 +235,10 @@ def extract_outlook_information(max_email_number_to_extract_input,date_start_inp
         except Exception as e:
             append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
 
+
         #Captures email-related task info
         if task.Class == 43:
+
             try:
                 received_time = task.ReceivedTime.strftime("%m/%d/%Y %H:%M:%S")
                 flagged_messages_dict['ReceivedTime'] = received_time
@@ -325,6 +337,7 @@ def generate_unread_senders_viz():
     except Exception as e:
         append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
 
+
 #Reformats item text data to UTF-8
 def generic_email_data_gen(messages_list, email_data_file):
 
@@ -338,9 +351,11 @@ def generic_email_data_gen(messages_list, email_data_file):
                 print('\n'.join(s.decode('utf-8', 'ignore') for s in item['subject']),"\t",item['SenderEmailAddress'], "\t", item['ReceivedTime'], file = email_data_file)
             else:
                 print('\n'.join(s.decode('utf-8', 'ignore') for s in item['subject']),"\t", "-", "\t", "-", file = email_data_file)
+
         email_data_file.close()
     except Exception as e:
         append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
+
 
 #Generates categories metric data
 def category_data_gen(category_list,categories_data_file):
@@ -415,7 +430,6 @@ def generate_categories_viz():
         
     except Exception as e:
         append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
-
 
 #Generates flagged email visualization
 def generate_generic_viz(flagged_counter_int,email_data_file,email_image_file,title):
