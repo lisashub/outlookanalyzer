@@ -220,7 +220,7 @@ def extract_outlook_information(max_email_number_to_extract_input,date_start_inp
     for task in tqdm(tasks):      
         flagged_messages_dict = {} 
 
-        #Captures info for tasks unrelated emails
+        #Captures info for all tasks
         try:
             subject = task.Subject
             clean_subject = cleanup(subject) #Removes invisible white space / pointers that pandas cannot handle
