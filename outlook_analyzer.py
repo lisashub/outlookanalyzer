@@ -22,6 +22,8 @@ import os
 import subprocess
 import time
 
+#temporary for troubleshooting
+import traceback
 
 ERROR_LIST = []
 TIME_STR = time.strftime("%Y%m%d-%H%M%S")
@@ -58,8 +60,11 @@ image_file_name_dict = {'icon'   : {"image_path": "icon.png", "x":"0", "y":"0", 
 
 #             'count_overview' :{"image_path": COUNTING_IMAGE_FILE_NAME, "x":"0", "y":"130", "w":"175", "h":"30"},
 
-def append_to_error_list(function_name, error_text):
+def append_to_error_list(function_name, error_text, optArg = None): #added optional argument for more detail
     ERROR_LIST.append("function: " + function_name + " | " +  "error: " + error_text)
+    if optArg:
+        ERROR_LIST.append(["additional details:", optArg])
+    
 
 #Extracts data from Outlook
 def extract_outlook_information(max_email_number_to_extract_input,date_start_input,date_end_input): #to modify as new features required
@@ -493,6 +498,12 @@ def convert_csv_to_df_to_figure_to_pdf(email_data_file,title_str,columns_list):
 
     try:
         df = pd.read_csv(email_data_file, sep = "\t", encoding ='utf-8', names=columns_list)
+        
+        if "Subject" in df.columns:
+            for i in range(df.shape[0]): #iterates over rows
+                if len(df.at[i, "Subject"]) > 50: #checks if Subject is over 50 chars; seems like happy medium
+                    df.at[i, "Subject"] = df.at[i, "Subject"][0:46] + "..." #truncates subject
+            print(df)
 
         fig, ax =plt.subplots(figsize=(12,4))
         plt.title(title_str)
@@ -500,6 +511,8 @@ def convert_csv_to_df_to_figure_to_pdf(email_data_file,title_str,columns_list):
         ax.axis('off')
         table = ax.table(cellText=df.values, cellLoc='center', colLabels=df.columns, loc='center')
         table.scale(1, 2)
+        table.auto_set_font_size(False)  #stops automatic text shrink which defaults to True
+        table.set_fontsize(8)
 
         random_string = string.ascii_lowercase
         letters = string.ascii_lowercase
@@ -513,6 +526,7 @@ def convert_csv_to_df_to_figure_to_pdf(email_data_file,title_str,columns_list):
         pp.close()
     except Exception as e:
         append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
+        
 
     try:
 
@@ -588,8 +602,11 @@ def delete_stuff ():
             # dir_option = input('Would you like to clean your directory? (y/n):')
             # if dir_option == 'y' or dir_option == 'Y':
                 for item in dir_list:
-                    if item.endswith('.txt') or item.endswith('.png') or item.endswith('.jpg') or item.endswith('.pdf'): # comment this out just in case you don't want to remove the images in the PDF code above
-                        os.remove(os.path.join(TEMP_DIR, item))
+                    try:
+                        if item.endswith('.txt') or item.endswith('.png') or item.endswith('.jpg') or item.endswith('.pdf'): # comment this out just in case you don't want to remove the images in the PDF code above
+                            os.remove(os.path.join(TEMP_DIR, item))
+                    except Exception as e:
+                        append_to_error_list(str(sys._getframe().f_code.co_name),str(e), traceback.format_exc())
                 print('Directory cleaned')
                 break;
             # elif dir_option == 'n' or dir_option == 'N':
