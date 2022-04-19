@@ -145,13 +145,15 @@ def extract_outlook_information(max_email_number_to_extract_input,date_start_inp
             append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
 
         #check and store emails marked as important
+        # 2 means is an email is marked as important
+        # 43 is the class for regular email
         if (item.Importance == 2 and item.Class == 43):
             important_messages_dict = {} #dict to capture important message info (create a dict for each email)
 
             try:
                 subject = item.Subject
                 # Remove invisible white space / pointers that pandas cannot handle
-                clean_subject = cleanup(subject)           
+                clean_subject = cleanup(subject)
                 subject = [clean_subject.encode("utf-8").strip()] # Common for subjects to have emoji or utf8 data so need encode as utf8
                 important_messages_dict['subject'] = subject
             except Exception as e:
