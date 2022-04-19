@@ -503,7 +503,6 @@ def convert_csv_to_df_to_figure_to_pdf(email_data_file,title_str,columns_list):
             for i in range(df.shape[0]): #iterates over rows
                 if len(df.at[i, "Subject"]) > 50: #checks if Subject is over 50 chars; seems like happy medium
                     df.at[i, "Subject"] = df.at[i, "Subject"][0:46] + "..." #truncates subject
-            print(df)
 
         fig, ax =plt.subplots(figsize=(12,4))
         plt.title(title_str)
