@@ -2,8 +2,11 @@
 
 ## Installing Dependencies
 Install required packages:
+
 (1) Open command prompt
+
 (2) Navigate to the directory of the Outlook Analyzer project
+
 (3) Enter "pip install -r requirements.txt" into your command prompt and execute
 
 ## Understanding Script Variable Naming Standards

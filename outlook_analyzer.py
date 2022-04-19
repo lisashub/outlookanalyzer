@@ -1,83 +1,96 @@
-import win32com.client #core extraction library
-from tqdm import tqdm # library to display extraction progress bar
-import pandas as pd # library to tabulate data and generate plot/image
+from tqdm import tqdm
 from tabulate import tabulate
-import matplotlib.pyplot as plt
-import dataframe_image as dfi
-from wordcloud import WordCloud, STOPWORDS #word cloud generation library
-import re #regex library used to clean data
-import time
+from wordcloud import WordCloud, STOPWORDS
 from datetime import timedelta
 from datetime import date
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
+
+import matplotlib.pyplot as plt
+import pandas as pd
+import re
+import time
+import win32com.client
+import os
 import sys
 
-ERROR_LIST = []
-TIME_STR = time.strftime("%Y%m%d-%H%M%S")
-TEMP_DIR = "C:\WINDOWS\Temp"
 
+#Global script variables created
+ERROR_LIST = []
+TEMP_DIR = "C:\WINDOWS\Temp"
+TIME_STR = time.strftime("%Y%m%d-%H%M%S")
 WORD_CLOUD_CLEANED_FILE_NAME = TEMP_DIR + "\\" + TIME_STR + "_" + "word_cloud_text_cleaned.txt"
 WORD_CLOUD_FILE_NAME = TEMP_DIR + "\\" + TIME_STR + "_" + "word_cloud_text.txt"
 WORD_CLOUD_IMAGE_FILE_NAME = TEMP_DIR + "\\" + TIME_STR + "_" + "word_cloud.jpg"
+
+#Global extract text files created
 UNREAD_SENDERS_DATA_FILE_NAME = TEMP_DIR + "\\" + TIME_STR + "_" + "unread_senders.txt"
 CATEGORIES_DATA_FILE_NAME = TEMP_DIR + "\\" + TIME_STR + "_" + "categories.txt"
 FLAGGED_EMAIL_DATA_FILE_NAME = TEMP_DIR + "\\" + TIME_STR + "_" + "flagged_email.txt"
 IMPORTANT_EMAIL_DATA_FILE_NAME = TEMP_DIR + "\\" + TIME_STR + "_" + "important_email.txt"
+
+
+#Global image files created
+UNREAD_SENDERS_IMAGE_FILE_NAME = TEMP_DIR + "\\" + TIME_STR + "_" + "sender_plot.jpg"
+CATEGORIES_IMAGE_FILE_NAME = TEMP_DIR + "\\" + TIME_STR + "_" + "categories.jpg"
+FLAGGED_EMAIL_IMAGE_FILE_NAME = TEMP_DIR + "\\" + TIME_STR + "_" + "flagged_email_list.png"
+IMPORTANT_EMAIL_IMAGE_FILE_NAME = TEMP_DIR + "\\" + TIME_STR + "_" + "important_email_list.png"
 FLAGGED_EMAIL_IMAGE_FILE_NAME = TEMP_DIR + "\\" + TIME_STR + "_" + "flagged_email_list.png"
 IMPORTANT_EMAIL_IMAGE_FILE_NAME = TEMP_DIR + "\\" + TIME_STR + "_" + "important_email_list.png"
 SENDER_PLOT_FILE_NAME = TEMP_DIR + "\\" + TIME_STR + "_" + "sender_plot.jpg"
 CATEGORIES_IMAGE_FILE_NAME = TEMP_DIR + "\\" + TIME_STR + "_" + "categories.jpg"
 COUNTING_IMAGE_FILE_NAME = TEMP_DIR + "\\" + TIME_STR + "_" + "counting.jpg"
 
+#Function to generate a list of errors that have occurred during progam execution; printed at end of run
 def append_to_error_list(function_name, error_text):
     ERROR_LIST.append("function: " + function_name + " | " +  "error: " + error_text)
 
-#Extracts data from Outlook
+#Function to extract relavent Outlook information from user's desktop client
 def extract_outlook_information(max_email_number_to_extract_input,date_start_input,date_end_input): #to modify as new features required
 
     #Connection to Outlook object model established
-    outlook = win32com.client.Dispatch("Outlook.Application").GetNamespace("MAPI") #maps outlook variable to outlook application
-    inbox = outlook.GetDefaultFolder(6) #outlook.GetDefaultFolder(6) is the default for the application inbox
-    messages = inbox.Items #variable for items in inbox
+    outlook = win32com.client.Dispatch("Outlook.Application").GetNamespace("MAPI")
+    inbox = outlook.GetDefaultFolder(6)
+    todo_folder = outlook.GetDefaultFolder(28) #outlook.GetDefaultFolder(28) is for the todo/flagged items
+    messages = inbox.Items
+    todo_items = todo_folder.Items
 
-    #create data files
-
+    #Creates data file variables to store extracted information
     sender_data_file = open(UNREAD_SENDERS_DATA_FILE_NAME, "w+", encoding = "utf-8")
     categories_data_file = open(CATEGORIES_DATA_FILE_NAME, "w+", encoding = "utf-8")
     flagged_email_data_file = open(FLAGGED_EMAIL_DATA_FILE_NAME, "w+", encoding = "utf-8")
     important_email_data_file = open(IMPORTANT_EMAIL_DATA_FILE_NAME, "w+", encoding = "utf-8")
     
-    #additional variable creation
-    unread_senders_raw_list = [] #list variable to capture unread email senders with dupes
-    unread_senders_unique_dict = {} #dictionary variable to capture unique unread senders with counts
-    categories_senders_list = [] #dictionary variable to capture category and sender information
-    category_list = [] #list variable to capture email category 
-    flagged_messages_list = [] #list to capture flagged messege info
-    important_messages_list = [] #list to capture important messege info
-    counting_dict = {} #dictionary variable to capture different counts
 
+    #Creates intermediate list and dictionary structure variable to store extracted information
+    category_list = []
+    counting_dict = {}
+    flagged_messages_list = []
+    important_messages_list = []
+    unread_senders_raw_list = []
+    unread_senders_unique_dict = {}
+   
+    #Creates variables to count key inbox properties
     categories_counter_int = 0
-    number_of_times_categories_assigned_counter_int = 0
     flagged_counter_int = 0
+    important_count_int = 0
     message_counter_int = 0
     message_read_counter_int = 0
     message_unread_counter_int = 0
-    important_count_int = 0
+    number_of_times_categories_assigned_counter_int = 0
 
-    messages.Sort("[ReceivedTime]",True)
 
-    # Setup end_date for month or days for date range filter
-    if date_end_input[-1] == "m":
+
+    #Establishes how many months or days back the script should look for emails
+    if date_end_input[-1] == "m": #Value will be "m" if user enters range in months
         month_int = int(date_end_input[0:-1])
 
-        if month_int == 0:
-            # end_date = date.today()
+        if month_int == 0: #Value will be 0 if user does not enter a date rage; default used
             end_date = datetime.now()
         else:
            end_date = datetime.now() - relativedelta(months=+month_int)
 
-    elif date_end_input[-1] == "d":
+    elif date_end_input[-1] == "d": #Value will be "d" if user enters range in days
         day_int = int(date_end_input[0:-1])
  
         if day_int == 0:
@@ -85,7 +98,7 @@ def extract_outlook_information(max_email_number_to_extract_input,date_start_inp
         else:
             end_date = datetime.now() - timedelta(days=day_int)
 
-    # Setup start_date for month or days for date range filter
+    #Establishes how many months or days from the present the script should look for emails; see comments above for value descriptions
     if date_start_input[-1] == "m":
         month_int = int(date_start_input[0:-1])
 
@@ -102,28 +115,32 @@ def extract_outlook_information(max_email_number_to_extract_input,date_start_inp
         else:
             start_date = date.today() - timedelta(days=day_int)
 
-    # Convert time into string format for filtering messages
+    #Converts email extraction date inputs into string format for filtering messages
     date_start_str = start_date.strftime('%m/%d/%Y %H:%M %p')
     date_end_str = end_date.strftime('%m/%d/%Y %H:%M %p')
 
-    filtered_message = messages.Restrict("[ReceivedTime] >= '" + date_start_str + "' AND [ReceivedTime] <= '" + date_end_str + "'")
+    #Combines end and start date inputs into a range
+    filtered_messages = messages.Restrict("[ReceivedTime] >= '" + date_start_str + "' AND [ReceivedTime] <= '" + date_end_str + "'")
     
     print("Extracting email messages:")
-    for item in tqdm(filtered_message):
-
-        #check and store unread email info
+    
+    #Iterates through inbox items and extracts relevant information
+    messages.Sort("[ReceivedTime]",True)
+    for inbox_item in tqdm(filtered_messages): # Displays tdqm progress bar during iteration
+        
+        #Unread email metric logic
         try:
-            if (item.UnRead == True):
+            if (inbox_item.UnRead == True):
 
                 message_unread_counter_int = message_unread_counter_int + 1
 
-                if item.Class == 43:
-                    if item.SenderEmailType == "EX":
-                        sender = item.Sender.GetExchangeUser().PrimarySmtpAddress
+                if inbox_item.Class == 43: #Class "43" is assigned to VBA MailItem objects (i.e. regular emails):https://docs.microsoft.com/en-us/office/vba/api/outlook.olobjectclass
+                    if inbox_item.SenderEmailType == "EX": # SenderEmailType "EX" is assigned to MailItems received from internal MS Exchange
+                        sender = inbox_item.Sender.GetExchangeUser().PrimarySmtpAddress
                     else:
-                        sender = item.SenderEmailAddress
+                        sender = inbox_item.SenderEmailAddress
                 else:
-                    sender = item.SenderEmailAddress
+                    sender = inbox_item.SenderEmailAddress
     
                 unread_senders_raw_list.append(sender)
 
@@ -133,10 +150,11 @@ def extract_outlook_information(max_email_number_to_extract_input,date_start_inp
         except Exception as e:
             append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
         
-       #check and store categories info
+        #Assigned category metric logic 
         try:
-            if item.Categories:
-                item_categories = item.Categories.split(",")
+            if inbox_item.Categories:
+                item_categories = inbox_item.Categories.split(",") #Splits multiple categories if applicable
+
                 categories_counter_int = categories_counter_int + 1
                 for category in item_categories:
                     category_list.append(category.strip())
@@ -144,78 +162,68 @@ def extract_outlook_information(max_email_number_to_extract_input,date_start_inp
         except Exception as e:
             append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
 
-        #check and store emails marked as important
-        # 2 means is an email is marked as important
-        # 43 is the class for regular email
-        if (item.Importance == 2 and item.Class == 43):
-            important_messages_dict = {} #dict to capture important message info (create a dict for each email)
-
+        #Follow-up and high importance email flag metric logic
+        if (inbox_item.Importance == 2 and inbox_item.Class == 43): #Importace is 2 if item is marked as High Importance
+            important_messages_dict = {} # To organize item information
             try:
-                subject = item.Subject
-                # Remove invisible white space / pointers that pandas cannot handle
-                clean_subject = cleanup(subject)
-                subject = [clean_subject.encode("utf-8").strip()] # Common for subjects to have emoji or utf8 data so need encode as utf8
+                subject = inbox_item.Subject
+                clean_subject = cleanup(subject) #Removes invisible white space/pointers that pandas cannot handle
+                subject = [clean_subject.encode("utf-8").strip()] #Encodes subject as utf8 to handle special characters
+
                 important_messages_dict['subject'] = subject
             except Exception as e:
                 append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
         
             try:
-                email_class = item.Class
+
+                email_class = inbox_item.Class
                 important_messages_dict['Class'] = email_class
             except Exception as e:
                 append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
 
             try:
-                received_time = item.ReceivedTime.strftime("%m/%d/%Y %H:%M:%S")
+                received_time = inbox_item.ReceivedTime.strftime("%m/%d/%Y %H:%M:%S")
                 important_messages_dict['ReceivedTime'] = received_time
             except Exception as e:
                 append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
 
-            # Do not want the long exchange details, for "EX" SenderEmailType, get the PrimarySmtpAddress
-            if item.SenderEmailType == "EX":
+            #Retrieves more readable sender data if sender is within internal MS exchange
+            if inbox_item.SenderEmailType == "EX":
                 try:
-                    sender_email = item.Sender.GetExchangeUser().PrimarySmtpAddress
+                    sender_email = inbox_item.Sender.GetExchangeUser().PrimarySmtpAddress
                 except Exception as e:
                     append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
             else:
                 try:
-                    sender_email = item.SenderEmailAddress
+                    sender_email = inbox_item.SenderEmailAddress
                 except Exception as e:
                     append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
 
             important_messages_dict['SenderEmailAddress'] = sender_email
 
-            # Add the attributes for each item to the important_messages_dict
+            #Adds the attributes for each item to the important_messages_dict
             important_messages_list.append(important_messages_dict)
 
-            # Keep track of the numbers of important items
             important_count_int = important_count_int + 1
-
+        
         message_counter_int = message_counter_int + 1
-
-        # Check if max number of email has been reached       
+        #End of inbox item iteration loop
+        
+        #Checks if max number of emails has been reached       
         if message_counter_int >= int(max_email_number_to_extract_input):
             break
-
-    todo_folder = outlook.GetDefaultFolder(28) #outlook.GetDefaultFolder(28) is for the todo/flagged items
-
-    todo_items = todo_folder.Items
+    
+    #Iterates through to-do items; see comments associated with similar code above for additional insight 
     tasks = todo_items.Restrict("[Complete] = FALSE")
-
+    
     print("Extracting tasks/flagged items:")
     for task in tqdm(tasks):      
+        flagged_messages_dict = {} 
 
-        #check and store flagged email/tasks/todo
-
-        flagged_messages_dict = {} #dict to capture flagged message info (create a dict for each task)
-
-        # Assign value and add to dict for several attributes
-
-        # Tasks that do not come in as email only have subject
+        #Captures info for all tasks
         try:
             subject = task.Subject
-            # Remove invisible white space / pointers that pandas cannot handle
-            clean_subject = cleanup(subject)           
+            clean_subject = cleanup(subject) #Removes invisible white space / pointers that pandas cannot handle
             subject = [clean_subject.encode("utf-8").strip()] # Common for subjects to have emoji or utf8 data so need encode as utf8
             flagged_messages_dict['subject'] = subject
         except Exception as e:
@@ -227,16 +235,16 @@ def extract_outlook_information(max_email_number_to_extract_input,date_start_inp
         except Exception as e:
             append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
 
-        # class 43 is standard MailItem. ReportItem/MeetingItem are a different class.
+
+        #Captures email-related task info
         if task.Class == 43:
-        
+
             try:
                 received_time = task.ReceivedTime.strftime("%m/%d/%Y %H:%M:%S")
                 flagged_messages_dict['ReceivedTime'] = received_time
             except Exception as e:
                 append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
 
-            # Do not want the long exchange details, for "EX" SenderEmailType, get the PrimarySmtpAddress
             if task.SenderEmailType == "EX":
                 try:
                     sender_email = task.Sender.GetExchangeUser().PrimarySmtpAddress
@@ -281,11 +289,10 @@ def extract_outlook_information(max_email_number_to_extract_input,date_start_inp
     generate_generic_viz(important_count_int, IMPORTANT_EMAIL_DATA_FILE_NAME,IMPORTANT_EMAIL_IMAGE_FILE_NAME,"Email sent with Important")
 
     word_cloud_extract(messages)
-    word_cloud_display()
+    generate_word_cloud_viz()
     
-#Extracts word cloud information from messages
+#Extracts word cloud information from most recent 50 messages
 def word_cloud_extract(messages):
-    
     try:
      wc_file = open(WORD_CLOUD_FILE_NAME, "w+", encoding = "utf-8") #creates data file
      i = 0
@@ -297,41 +304,41 @@ def word_cloud_extract(messages):
     except Exception as e:
         append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
 
-#Generates data for unread senders visualizations
+#Generates data for unread senders plot
 def unread_senders_data_gen(unread_senders_raw_list,unread_senders_unique_dict,sender_data_file):
     try:
         unread_senders_unique_list = unique(unread_senders_raw_list)
         
         for sender in unread_senders_unique_list:
             unread_senders_unique_dict[sender] = unread_senders_raw_list.count(sender)
+            
+        unread_senders_unique_list = sorted(unread_senders_unique_dict.items(), key = lambda x:x[1], reverse = True) #Sorts dict and stores as list
+        unread_senders_unique_sorted_dict = dict(unread_senders_unique_list) #Converts list back to dict
+        senders_counter_int = 0
         
-        unread_senders_unique_list = sorted(unread_senders_unique_dict.items(), key = lambda x:x[1], reverse = True) # sorts dict and stores as list
-        unread_senders_unique_sorted_dict = dict(unread_senders_unique_list) #converts list back to dict
-    
-        senders_counter_int = 0 # counter variable to help count collected senders
-        for item in unread_senders_unique_sorted_dict.items(): #write's top nth senders and email count to file
+        #Collects data for top 10 senders of unread email
+        for item in unread_senders_unique_sorted_dict.items():
             if (senders_counter_int<10):
                 print(item[0], "\t", item[1], file = sender_data_file)
                 senders_counter_int = senders_counter_int + 1
-        
         sender_data_file.close()
     except Exception as e:
         append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
     
-#Generates unread senders visualizations
+#Generates unread senders table and image file
 def generate_unread_senders_viz():
-    
-    #Reads unread sender data and generates visualization; saves and displays
     try:
         sender_table = pd.read_table(UNREAD_SENDERS_DATA_FILE_NAME, sep = '\t', header = None)
         plot = sender_table.groupby([0]).sum().plot(kind='pie', y=1, labeldistance=None, autopct='%1.0f%%', title="Senders of Unread Emails")
-        plot.legend(bbox_to_anchor=(1,1)) #Sets legend details
-        plot.set_ylabel("Senders") #Set label detail
-        plot.figure.savefig(SENDER_PLOT_FILE_NAME, bbox_inches='tight') #saves plot locally
+        plot.legend(bbox_to_anchor=(1,1)) #Anchors plot legend to right of plot
+        plot.set_ylabel("Senders")
+        plot.figure.savefig(UNREAD_SENDERS_IMAGE_FILE_NAME, bbox_inches='tight') #Saves plot locally
         print("\n","Top 10 Senders of Unread Emails: ", "\n", sender_table)
     except Exception as e:
         append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
 
+
+#Reformats item text data to UTF-8
 def generic_email_data_gen(messages_list, email_data_file):
 
     # Have to generate a text file to decode the utf8 data
@@ -349,6 +356,8 @@ def generic_email_data_gen(messages_list, email_data_file):
     except Exception as e:
         append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
 
+
+#Generates categories metric data
 def category_data_gen(category_list,categories_data_file):
 
     category_dict = {} #dictionary variable to capture email category
@@ -399,6 +408,10 @@ def generate_count_viz(counting_dict, date_start_str, date_end_str):
 #Generates categories visualizations
 def generate_categories_viz():
     try:
+        
+        if os.stat(CATEGORIES_DATA_FILE_NAME).st_size == 0:
+            return
+        
         #Pandas dataframe for the counted emails that are categorized
         df = pd.read_csv(CATEGORIES_DATA_FILE_NAME, sep = "\t")
     
@@ -417,14 +430,6 @@ def generate_categories_viz():
         
     except Exception as e:
         append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
-
-# Function to remove certain utf8 characters from strings
-def cleanup(inp):
-    new_char = ""
-    for char in inp:
-        if char not in ["\u202a", "\u202c"]:
-            new_char += char
-    return new_char
 
 #Generates flagged email visualization
 def generate_generic_viz(flagged_counter_int,email_data_file,email_image_file,title):
@@ -459,54 +464,74 @@ def generate_generic_viz(flagged_counter_int,email_data_file,email_image_file,ti
     print("\n")
     print("Number of Flagged emails: ", flagged_counter_int)
 
-
-#Removes hyperlink information from email body to produce more meaningful clouds
-def word_cloud_content_clean():
-    
+#Generates word cloud visualization
+def generate_word_cloud_viz():
     try:
+        wc_cleaned_content_file = open(WORD_CLOUD_CLEANED_FILE_NAME, "r", encoding = "utf-8").read()
+        
+        #Sets stopwords  for cloud
+        stop_words = ["said", "email", "s", "will", "u", "re", "3A", "2F", "safelinks", "reserved", "https"] + list(STOPWORDS) #customized stopword list
+        
+        #Generates word cloud
+        word_cloud = WordCloud(stopwords = stop_words).generate(str(wc_cleaned_content_file))
+        plt.clf()
+        plt.imshow(word_cloud)
+        plt.axis('off')
+        plt.savefig(WORD_CLOUD_IMAGE_FILE_NAME)
+    except Exception as e:
+        append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
+
+#Function to remove converse characters ("\u202a") and pop directional formatting characters from strings ("\u202c")
+#Code borrowed from https://stackoverflow.com/questions/49267999/remove-u202a-from-python-string
+def cleanup(inp):
+    new_char = ""
+    for char in inp:
+        if char not in ["\u202a", "\u202c"]:
+            new_char += char
+    return new_char
+
+
+#Removes hyperlink information from email body text to make more meaningful clouds
+def word_cloud_content_clean():
+    try:
+        #Opens extracted email body text and cleansed text storage file
         wc_content= open(WORD_CLOUD_FILE_NAME, "r", encoding = "utf-8").read()
         wc_content_cleaned = open(WORD_CLOUD_CLEANED_FILE_NAME, "w+", encoding = "utf-8")
         
+        #Create indices counter variable
+        indices_counter_int = 0
+        
+        #Assigns variables to tags preceeding link information
         sub1 = '<http'
         sub2 = '<mail'
         
+        #Creates list of indices where opening tags occur in email text body
         indices1_link = [m.start() for m in re.finditer(sub1, wc_content)]
         indices2_mail = [m.start() for m in re.finditer(sub2, wc_content)]
+        
+        #Combines indices lists
         indices1_link.extend(indices2_mail)
         indices1_link.sort()
         
+        #Creates variable to capture indices of closing link tags
         indices2 = []
         
+        #Identifies and stores indices values
         for indices in indices1_link:
                 end_indices = wc_content[indices:].find('>')
                 indices2.append(end_indices+indices)
         
-        i = 0
-        while i < len(indices2)-1:
-            print(wc_content[indices2[i]+1:indices1_link[i+1]], file = wc_content_cleaned)
-            i = i + 1
+        #Iterates through email body text using identified indices; print non-link data into cleansed file
+        while indices_counter_int < len(indices2)-1:
+            print(wc_content[indices2[indices_counter_int]+1:indices1_link[indices_counter_int+1]], file = wc_content_cleaned)
+            indices_counter_int = indices_counter_int + 1
             
         wc_content_cleaned.close()
     
     except Exception as e:
         append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
 
-#Generates word cloud from cleaned email text
-def word_cloud_generate():
-    wc_content= open(WORD_CLOUD_CLEANED_FILE_NAME, "r", encoding = "utf-8").read()
-    stop_words = ["said", "email", "s", "will", "u", "re", "3A", "2F", "safelinks", "reserved", "https"] + list(STOPWORDS) #customized stopword list
-    wordcloud = WordCloud(stopwords = stop_words).generate(str(wc_content))
-    return(wordcloud)
 
-#Saves and displays word cloud to user
-def word_cloud_display():
-    try:
-        plt.clf()
-        plt.imshow(word_cloud_generate())
-        plt.axis('off')
-        plt.savefig(WORD_CLOUD_IMAGE_FILE_NAME)
-    except Exception as e:
-        append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
 
 #Identifiies unique elements within a list
 def unique (list1):
@@ -516,56 +541,49 @@ def unique (list1):
             unique_elements_list.append(item)
     return unique_elements_list
 
-#UI code; checks whether new extraction required and calls if necessary
+
 def main():  
     
     print("\n")
     print("Welcome to Outlook Analyzer!")
 
-    user_input = input("Would you like to extract fresh data from Outlook? (Y/N)")
 
-    #Logic to determine whether extraction is required
-    if user_input == "Y" or user_input == "y":
+    #Receives and checks max numbebr of emails to extract
+    while True:
+        max_email_number_to_extract_input = input("Max number of email messages you would like to extract (between 50 and 100000)? (hit Enter for default: 500)") or 500
 
-        # Check if user provided an actual integer
-        while True:
-            max_email_number_to_extract_input = input("Max number of email messages you would like to extract (between 50 and 100000)? (hit Enter for default: 500)") or 500
+        try:
+            int(max_email_number_to_extract_input)
+            if int(max_email_number_to_extract_input) >= 50 and int(max_email_number_to_extract_input) <= 100000:
+                break;
+        except ValueError:
+            print("Please enter a valid integer between 50 and 100000.")
 
-            try:
-                int(max_email_number_to_extract_input)
-                if int(max_email_number_to_extract_input) >= 50 and int(max_email_number_to_extract_input) <= 100000:
-                    break;
-            except ValueError:
-                print("Please enter a valid integer between 50 and 100000.")
+    #Receives and checks user input for oldest email cut-off date
+    while True:
+        date_start_input = input("From how far back would you like to collect and analyze emails in months or days (e.g. 10m, 12d)? (Hit enter for default: 12 months ago)") or "12m"
 
-        # Check if user entered in proper format for day/month
-        while True:
-            date_start_input = input("From how far back would you like to collect and analyze emails in months or days (e.g. 10m, 12d)? (Hit enter for default: 12 months ago)") or "12m"
+        try:
+            int(date_start_input[0:-1])
+            if date_start_input[-1] == "m" or date_start_input[-1] == "d":
+                break;
+        except ValueError:
+            print("This is not a valid format. Please enter as '##m' or '##d' where d is for days and m is for months  (e.g. 10d or 1m")
 
-            try:
-                int(date_start_input[0:-1])
-                if date_start_input[-1] == "m" or date_start_input[-1] == "d":
-                    break;
-            except ValueError:
-                print("This is not a valid format. Please enter as '##m' or '##d' where d is for days and m is for months  (e.g. 10d or 1m")
+    #Receives and checks user input for email recency cut-off date
+    while True:
+        date_end_input = input("What's the cutoff for the most recent emails you'd like to collect and analyze in months or days (e.g. 1m, 10d)? (Hit enter for default: today)") or "0m"
 
-        # Check if user entered in proper format for day/month
-        while True:
-            date_end_input = input("What's the cutoff for the most recent emails you'd like to collect and analyze in months or days (e.g. 1m, 10d)? (Hit enter for default: today)") or "0m"
+        try:
+            int(date_end_input[0:-1])
+            if date_end_input[-1] == "m" or date_end_input[-1] == "d":
+                break;
+        except ValueError:
+            print("This is not a valid format. Please enter as '##m' or '##d' where d is for days and m is for months  (e.g. 10d or 1m")
 
-            try:
-                int(date_end_input[0:-1])
-                if date_end_input[-1] == "m" or date_end_input[-1] == "d":
-                    break;
-            except ValueError:
-                print("This is not a valid format. Please enter as '##m' or '##d' where d is for days and m is for months  (e.g. 10d or 1m")
+    extract_outlook_information(max_email_number_to_extract_input,date_start_input,date_end_input)
 
-        extract_outlook_information(max_email_number_to_extract_input,date_start_input,date_end_input)
-
-    else:
-        print("Sorry, the provided response was not understood.")
-
-    #displays errors generated throughout program execution
+    #Displays any errors generated throughout program execution
     if ERROR_LIST != []:
         print("\n")
         print("Some errors occurred during execution:")
