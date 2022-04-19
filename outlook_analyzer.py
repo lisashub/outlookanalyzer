@@ -12,10 +12,31 @@ from datetime import date
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 import sys
+from matplotlib.backends.backend_pdf import PdfPages
+import random
+import string
+from fpdf import FPDF
+from glob import glob
+from PyPDF2 import PdfFileMerger
+import os
+import subprocess
+import time
+
 
 ERROR_LIST = []
 TIME_STR = time.strftime("%Y%m%d-%H%M%S")
-TEMP_DIR = "C:\WINDOWS\Temp"
+TEMP_FOLDER = "outlookanalyzer"
+TEMP_DIR = "C:\\WINDOWS\\Temp" + "\\" + TEMP_FOLDER 
+FINAL_REPORT = "C:\\WINDOWS\\Temp\\" + TIME_STR + "_outlook_analyzer_report.pdf" 
+
+# Check whether the specified path exists or not
+is_temp_dir_exist = os.path.exists(TEMP_DIR)
+
+if not is_temp_dir_exist:
+  
+  # Create a new directory because it does not exist 
+  os.makedirs(TEMP_DIR)
+  print("The new directory is created!")
 
 WORD_CLOUD_CLEANED_FILE_NAME = TEMP_DIR + "\\" + TIME_STR + "_" + "word_cloud_text_cleaned.txt"
 WORD_CLOUD_FILE_NAME = TEMP_DIR + "\\" + TIME_STR + "_" + "word_cloud_text.txt"
@@ -29,6 +50,13 @@ IMPORTANT_EMAIL_IMAGE_FILE_NAME = TEMP_DIR + "\\" + TIME_STR + "_" + "important_
 SENDER_PLOT_FILE_NAME = TEMP_DIR + "\\" + TIME_STR + "_" + "sender_plot.jpg"
 CATEGORIES_IMAGE_FILE_NAME = TEMP_DIR + "\\" + TIME_STR + "_" + "categories.jpg"
 COUNTING_IMAGE_FILE_NAME = TEMP_DIR + "\\" + TIME_STR + "_" + "counting.jpg"
+
+image_file_name_dict = {'icon'   : {"image_path": "icon.png", "x":"0", "y":"0", "w":"35", "h":"30"},
+             'blue'   : {"image_path": "true_blue.jpg", "x":"35", "y":"0", "w":"175", "h":"30"},
+             'word_cloud' : {"image_path": WORD_CLOUD_IMAGE_FILE_NAME, "x":"0", "y":"75", "w":"300", "h":"150"},
+             'sender_plot'  :{"image_path": SENDER_PLOT_FILE_NAME, "x":"0", "y":"150", "w":"210", "h":"100"} }
+
+#             'count_overview' :{"image_path": COUNTING_IMAGE_FILE_NAME, "x":"0", "y":"130", "w":"175", "h":"30"},
 
 def append_to_error_list(function_name, error_text):
     ERROR_LIST.append("function: " + function_name + " | " +  "error: " + error_text)
@@ -51,7 +79,6 @@ def extract_outlook_information(max_email_number_to_extract_input,date_start_inp
     #additional variable creation
     unread_senders_raw_list = [] #list variable to capture unread email senders with dupes
     unread_senders_unique_dict = {} #dictionary variable to capture unique unread senders with counts
-    categories_senders_list = [] #dictionary variable to capture category and sender information
     category_list = [] #list variable to capture email category 
     flagged_messages_list = [] #list to capture flagged messege info
     important_messages_list = [] #list to capture important messege info
@@ -268,21 +295,34 @@ def extract_outlook_information(max_email_number_to_extract_input,date_start_inp
     counting_dict['total unique categories'] = unique_category_count_int
     counting_dict['total email maked as important'] = important_count_int
 
-    generate_count_viz(counting_dict, date_start_str, date_end_str)
     unread_senders_data_gen(unread_senders_raw_list, unread_senders_unique_dict,sender_data_file)
     generate_unread_senders_viz()
     category_data_gen(category_list, categories_data_file)
-    generate_categories_viz()
 
-    generic_email_data_gen(flagged_messages_list, flagged_email_data_file)
-    generic_email_data_gen(important_messages_list, important_email_data_file)
+    # Converts collected data into a text file for flagged messages 
+    build_text_with_subject_senderemail_receivedtime(flagged_messages_list, flagged_email_data_file)
+    # Converts collected data into a text file for flagged messages 
+    build_text_with_subject_senderemail_receivedtime(important_messages_list, important_email_data_file)
 
-    generate_generic_viz(flagged_counter_int,FLAGGED_EMAIL_DATA_FILE_NAME,FLAGGED_EMAIL_IMAGE_FILE_NAME,"Flagged email / Todo" )
-    generate_generic_viz(important_count_int, IMPORTANT_EMAIL_DATA_FILE_NAME,IMPORTANT_EMAIL_IMAGE_FILE_NAME,"Email sent with Important")
+    count_title_str = "Counts (" + "Start: " + date_start_str + " | End: " + date_end_str + ")"
+    figure_column_list = ['Item', 'Count']
+    convert_dict_to_df_to_figure_to_pdf(counting_dict, count_title_str,figure_column_list)
+
+    figure_column_list = ['Category Name', 'Count']
+    convert_csv_to_df_to_figure_to_pdf(CATEGORIES_DATA_FILE_NAME,"Categories",figure_column_list)
+
+    figure_column_list = ["Subject","Sender Email","Date"]
+    convert_csv_to_df_to_figure_to_pdf(FLAGGED_EMAIL_DATA_FILE_NAME,"Flagged email / Todo", figure_column_list)
+
+    figure_column_list = ["Subject","Sender Email","Date"]
+    convert_csv_to_df_to_figure_to_pdf(IMPORTANT_EMAIL_DATA_FILE_NAME,"Email sent as Important",figure_column_list)
 
     word_cloud_extract(messages)
     word_cloud_display()
     
+    create_pdf_cover_page()
+    pdf_merge()
+
 #Extracts word cloud information from messages
 def word_cloud_extract(messages):
     
@@ -332,11 +372,10 @@ def generate_unread_senders_viz():
     except Exception as e:
         append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
 
-def generic_email_data_gen(messages_list, email_data_file):
+def build_text_with_subject_senderemail_receivedtime(messages_list, email_data_file):
 
     # Have to generate a text file to decode the utf8 data
     try:
-        print("Subject","\t",'SenderEmailAddress',"\t", 'ReceivedTime', file = email_data_file)
 
         for item in messages_list:
 
@@ -372,47 +411,32 @@ def category_data_gen(category_list,categories_data_file):
         append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
 
 #Generates counting visualizations
-def generate_count_viz(counting_dict, date_start_str, date_end_str):
+def convert_dict_to_df_to_figure_to_pdf(counting_dict, title_str, columns_list):
     try:
         #Pandas dataframe for the counted emails that are categorized
-        df = pd.DataFrame(counting_dict.items(), columns=['Item', 'Count'])
-    
-        title_str = "Counts (" + "Start: " + date_start_str + " | End: " + date_end_str + ")"
+        df = pd.DataFrame(counting_dict.items(), columns=columns_list)   
 
-        #Removing the axis for matplotlib and creating a visual table of the counted emails that are categorize
-        fig, ax = plt.subplots()
+        fig, ax =plt.subplots()
         plt.title(title_str)
-        ax.axis('off')
         ax.axis('tight')
+        ax.axis('off')
         table = ax.table(cellText=df.values, cellLoc='center', colLabels=df.columns, loc='center')
         table.scale(1, 2)
-        plt.savefig(COUNTING_IMAGE_FILE_NAME)  # saves plot locally,
+        # plt.savefig(COUNTING_IMAGE_FILE_NAME)  # saves plot locally,
+
+        random_string = string.ascii_lowercase
+        letters = string.ascii_lowercase
+        random_string = "b_" + ( ''.join(random.choice(letters) for i in range(10)) ) + ".pdf"
+        file_path = TEMP_DIR + "\\" + random_string
+
+        pp = PdfPages(file_path)
+        pp.savefig(fig, bbox_inches='tight')
+
+        pp.close()
         
         #prints a tabulate table using the pandas dataframe
         print("\n")
         print(title_str)
-        print(tabulate(df, headers='keys', tablefmt='fancy_grid', showindex='never'))
-        
-    except Exception as e:
-        append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
-
-#Generates categories visualizations
-def generate_categories_viz():
-    try:
-        #Pandas dataframe for the counted emails that are categorized
-        df = pd.read_csv(CATEGORIES_DATA_FILE_NAME, sep = "\t")
-    
-        #Removing the axis for matplotlib and creating a visual table of the counted emails that are categorize
-        fig, ax = plt.subplots()
-        plt.title('Number of Email(s) Categories')
-        ax.axis('off')
-        ax.axis('tight')
-        table = ax.table(cellText=df.values, cellLoc='center', colLabels=df.columns, loc='center')
-        table.scale(1, 2)
-        plt.savefig(CATEGORIES_IMAGE_FILE_NAME)  # saves plot
-        
-        #prints a tabulate table using the pandas dataframe
-        print("\n")
         print(tabulate(df, headers='keys', tablefmt='fancy_grid', showindex='never'))
         
     except Exception as e:
@@ -426,39 +450,77 @@ def cleanup(inp):
             new_char += char
     return new_char
 
-#Generates flagged email visualization
-def generate_generic_viz(flagged_counter_int,email_data_file,email_image_file,title):
-    if (flagged_counter_int  > 0):
-        try:
+def pdf_merge():
+    ''' Merges all the pdf files in current directory '''
+    merger = PdfFileMerger()
+    location_to_check_str = TEMP_DIR + "\\" + "*.pdf"
+    allpdfs = [a for a in glob(location_to_check_str)]
+    [merger.append(pdf) for pdf in allpdfs]
+    with open(FINAL_REPORT, "wb") as new_file:
+        merger.write(new_file)
 
-            # Create a dataframe from the list of dictionaries
-            df = pd.read_csv(email_data_file, sep = "\t")
+    subprocess.Popen([FINAL_REPORT],shell=True)
 
-            #Removing the axis for matplotlib and creating a visual table of the counted emails that are categorize
-            fig, ax = plt.subplots()
-            plt.title(title)
-            ax.axis('off')
-            ax.axis('tight')
-            table = ax.table(cellText=df.values, cellLoc='center', colLabels=df.columns, loc='center')
-            table.scale(2, 2)
-            plt.savefig(email_image_file, dpi=150)  # saves plot
+def create_pdf_cover_page():
+    try:
+    
+        # Code for creating PDF dashboard
+        pdf = FPDF()
+        pdf.add_page()  # adds pdf page
+        pdf.set_font('Arial', 'B', 18)  # sets pdf fonts
+        pdf.cell(0, 60, 'Outlook Analzyer Dashboard', 0, 0, align='C')  # Puts in title
+        # pdf.cell(-190, 75, date, 0, 0, align='C') # Puts in real time date
 
-        except Exception as e:
-            append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
-
-        try:
-
-            print("\n")
-            print(title)
-            print(tabulate(df, headers = 'keys', tablefmt = 'fancy_grid',showindex='never'))
-
-        except Exception as e:
-            append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
+        for image_id, image_info in image_file_name_dict.items():
+            print("\nItem:", image_id)
             
-            #Prints some ouputs to Command Line
-    print("\n")
-    print("Number of Flagged emails: ", flagged_counter_int)
+            for key in image_info:
+                print(key + ':', image_info[key])
+                pdf.image(image_info['image_path'], x=int(image_info['x']), y=int(image_info['y']), w=int(image_info['w']), h=int(image_info['h']))  
 
+        file_path = TEMP_DIR + "\\" + "a_cover_page.pdf"
+
+        pdf.output(file_path, 'F')  # saves pdf into local file
+        pdf.open()
+
+
+    except Exception as e:
+        append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
+
+
+
+def convert_csv_to_df_to_figure_to_pdf(email_data_file,title_str,columns_list):
+
+    try:
+        df = pd.read_csv(email_data_file, sep = "\t", encoding ='utf-8', names=columns_list)
+
+        fig, ax =plt.subplots(figsize=(12,4))
+        plt.title(title_str)
+        ax.axis('tight')
+        ax.axis('off')
+        table = ax.table(cellText=df.values, cellLoc='center', colLabels=df.columns, loc='center')
+        table.scale(1, 2)
+
+        random_string = string.ascii_lowercase
+        letters = string.ascii_lowercase
+        random_string = "c_" + ( ''.join(random.choice(letters) for i in range(10)) ) + ".pdf"
+
+        file_path = TEMP_DIR + "\\" + random_string
+
+        pp = PdfPages(file_path)
+        pp.savefig(fig, bbox_inches='tight')
+
+        pp.close()
+    except Exception as e:
+        append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
+
+    try:
+
+        print("\n")
+        print(tabulate(df, headers = 'keys', tablefmt = 'fancy_grid',showindex='never'))
+
+    except Exception as e:
+        append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
 
 #Removes hyperlink information from email body to produce more meaningful clouds
 def word_cloud_content_clean():
@@ -516,6 +578,25 @@ def unique (list1):
             unique_elements_list.append(item)
     return unique_elements_list
 
+
+def delete_stuff ():
+    dir_list = os.listdir(TEMP_DIR) #returns the list of all files and directories in the specified path
+
+    print(dir_list)
+    # Goes through directory and removes/cleans the files with specified extensions (i.e .txt, .tmp, .png, etc.)
+    while True:
+            # dir_option = input('Would you like to clean your directory? (y/n):')
+            # if dir_option == 'y' or dir_option == 'Y':
+                for item in dir_list:
+                    if item.endswith('.txt') or item.endswith('.png') or item.endswith('.jpg') or item.endswith('.pdf'): # comment this out just in case you don't want to remove the images in the PDF code above
+                        os.remove(os.path.join(TEMP_DIR, item))
+                print('Directory cleaned')
+                break;
+            # elif dir_option == 'n' or dir_option == 'N':
+            #     pass
+            #     break;
+
+
 #UI code; checks whether new extraction required and calls if necessary
 def main():  
     
@@ -560,6 +641,7 @@ def main():
             except ValueError:
                 print("This is not a valid format. Please enter as '##m' or '##d' where d is for days and m is for months  (e.g. 10d or 1m")
 
+        delete_stuff()
         extract_outlook_information(max_email_number_to_extract_input,date_start_input,date_end_input)
 
     else:
