@@ -172,8 +172,10 @@ def extract_outlook_information(max_email_number_to_extract_input,date_start_inp
                 unread_senders_raw_list.append(sender)
                 
                 continue
+            
             else:
                 raise Exception
+                
         except Exception as e:
             append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
         
