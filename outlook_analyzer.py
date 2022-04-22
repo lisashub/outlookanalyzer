@@ -129,7 +129,7 @@ def extract_outlook_information(max_email_number_to_extract_input,date_start_inp
     print("Extracting email messages:")
     
     #Iterates through inbox items and extracts relevant information
-    messages.Sort("[ReceivedTime]",True)
+    filtered_messages.Sort("[ReceivedTime]",True)
     for inbox_item in tqdm(filtered_messages): # Displays tdqm progress bar during iteration
         
         #Unread email metric logic
