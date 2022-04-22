@@ -22,6 +22,10 @@ import time
 import traceback
 import win32com.client
 
+# sets real time date as a string for PDF file
+now = datetime.now()
+date_now = now.strftime('%m/%d/%y')
+
 #Global script variables created
 ERROR_LIST = []
 TIME_STR = time.strftime("%Y%m%d-%H%M%S")
@@ -58,10 +62,12 @@ IMPORTANT_EMAIL_PDF_FILE_NAME = TEMP_DIR + "\\" + TIME_STR + "_" + "b004.pdf"
 FINAL_REPORT_PDF_FILE_NAME = "C:\\WINDOWS\\Temp\\" + TIME_STR + "_" + "outlook_analyzer_report.pdf" 
 
 # For images that get put into pdf pages
-IMAGE_FILE_NAME_DICT = {'icon'   : {"image_path": "icon.jpg", "x":"0", "y":"0", "w":"35", "h":"30"},
-             'blue'   : {"image_path": "light_blue.jpg", "x":"35", "y":"0", "w":"175", "h":"30"},
-             'word_cloud' : {"image_path": WORD_CLOUD_IMAGE_FILE_NAME, "x":"0", "y":"75", "w":"300", "h":"150"},
-             'sender_plot'  :{"image_path": SENDER_PLOT_IMAGE_FILE_NAME, "x":"0", "y":"150", "w":"210", "h":"100"} }
+image_file_name_dict = {'blue': {"image_path": "true_blue.jpg", "x": "0", "y": "0", "w": "210", "h": "30"},
+                        'icon': {"image_path": "icon.png", "x": "0", "y": "0", "w": "35", "h": "30"},
+                        'word_cloud': {"image_path": WORD_CLOUD_IMAGE_FILE_NAME, "x": "0", "y": "175", "w": "210",
+                                       "h": "95"},
+                        'sender_plot': {"image_path": SENDER_PLOT_IMAGE_FILE_NAME, "x": "0", "y": "65", "w": "210",
+                                        "h": "100"}}
 
 #Function to generate a list of errors that have occurred during progam execution; printed at end of run
 def append_to_error_list(function_name, error_text, optArg = None): #added optional argument for more detail
@@ -422,10 +428,9 @@ def generate_unread_senders_viz():
         append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
 
 
-#Reformats item text data to UTF-8
 # Currently used by Flagged email and Important email metric
 def build_text_with_subject_senderemail_receivedtime(messages_list, email_data_file):
-
+    ''' Reformats item text data to UTF-8 '''
     # Have to generate a text file to decode the utf8 data
     try:
 
@@ -442,7 +447,8 @@ def build_text_with_subject_senderemail_receivedtime(messages_list, email_data_f
 
 #Generates categories metric data
 def category_data_gen(category_list,categories_data_file):
-
+    ''' Generates category data by using the 'category_list', runs it through the 'unique' function,
+    saves results into a dict, and then prints it on a text file with the variable 'categories_data_file' '''
     category_dict = {} #dictionary variable to capture email category
     
     try:
@@ -510,11 +516,11 @@ def create_pdf_cover_page(message_counter_int,message_unread_counter_int):
         pdf.add_page()  # adds pdf page
         pdf.set_font('Arial', 'B', 18)  # sets pdf fonts
         pdf.cell(0, 60, 'Outlook Analzyer Report', 0, 0, align='C')  # Puts in title
-        # pdf.cell(-190, 75, date, 0, 0, align='C') # Puts in real time date # <-- TO DO: Fix this so date is displayed
+        pdf.cell(-190, 75, date_now, 0, 0, align='C') # Puts in real time date
 
 
         # Traverse through nested dictionary
-        for image_id, image_info in IMAGE_FILE_NAME_DICT.items():
+        for image_id, image_info in image_file_name_dict.items():
             # for troubleshooting
             # print("\nItem:", image_id)
             
@@ -584,9 +590,10 @@ def generate_word_cloud_viz():
     except Exception as e:
         append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
 
-#Function to remove converse characters ("\u202a") and pop directional formatting characters from strings ("\u202c")
+
 #Code borrowed from https://stackoverflow.com/questions/49267999/remove-u202a-from-python-string
 def cleanup(inp):
+    ''' Removes converse characters ("\u202a") and pop directional formatting characters from strings ("\u202c") '''
     new_char = ""
     for char in inp:
         if char not in ["\u202a", "\u202c"]:
@@ -594,7 +601,7 @@ def cleanup(inp):
     return new_char
 
 def delete_temp_files(type_list):
-    # Goes through directory and removes/cleans the files with specified extensions (i.e .txt, .tmp, .png, etc.)
+    ''' Goes through directory and removes/cleans the files with specified extensions (i.e .txt, .tmp, .png, etc.) '''
     while True:
 
         for item_type in type_list: # looping over the file type to remove
@@ -652,6 +659,7 @@ def word_cloud_content_clean():
 
 #Identifiies unique elements within a list
 def unique (list1):
+    ''' Identifies unique elements within a list '''
     unique_elements_list = []
     for item in list1:
         if item not in unique_elements_list:
@@ -666,7 +674,8 @@ def is_integer_num(n):
         return n.is_integer()
     return False
 
-def main(argv):  
+def main(argv):
+    ''' Runs through the specified inputs that users will enter to get their analyze data for Outlook '''
     max_email_number_to_extract_input = 500
     date_start_input = "12m"
     date_end_input = "0m"
