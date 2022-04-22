@@ -489,7 +489,7 @@ def convert_dict_to_df_to_figure_to_pdf(metric_dict, title_str, columns_list, pd
     except Exception as e:
         append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
 
-# Borrowed from https://stackoverflow.com/questions/3444645/merge-pdf-files
+# Code borrowed from https://stackoverflow.com/questions/3444645/merge-pdf-files
 def pdf_merge():
     ''' Merges all the pdf files in current directory '''
     merger = PdfFileMerger()
@@ -658,6 +658,7 @@ def unique (list1):
             unique_elements_list.append(item)
     return unique_elements_list
 
+# Code borrowed from https://note.nkmk.me/en/python-check-int-float/
 def is_integer_num(n):
     if isinstance(n, int):
         return True
