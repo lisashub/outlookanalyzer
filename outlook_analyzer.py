@@ -1,18 +1,22 @@
-from tqdm import tqdm
-from tabulate import tabulate
-from wordcloud import WordCloud, STOPWORDS
 from datetime import timedelta
 from datetime import date
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
+from tabulate import tabulate
+from tqdm import tqdm
+from wordcloud import WordCloud, STOPWORDS
+
 
 import matplotlib.pyplot as plt
+import os
 import pandas as pd
 import re
+import shutil
+import sys
 import time
 import win32com.client
-import os
-import sys
+
+
 
 
 #Global script variables created
@@ -146,7 +150,34 @@ def extract_outlook_information(max_email_number_to_extract_input,date_start_inp
 
             else:
                 message_read_counter_int = message_read_counter_int + 1
+                
+        except AttributeError as e:
+            
+            append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
+            
+            path = os.environ['USERPROFILE']+"\AppData\Local\Temp\gen_py"
+            
+            if os.path.isfile(path):
+                
+                shutil.rmtree(path)
+                
+                message_unread_counter_int = message_unread_counter_int + 1
 
+                if inbox_item.Class == 43: #Class "43" is assigned to VBA MailItem objects (i.e. regular emails):https://docs.microsoft.com/en-us/office/vba/api/outlook.olobjectclass
+                    if inbox_item.SenderEmailType == "EX": # SenderEmailType "EX" is assigned to MailItems received from internal MS Exchange
+                        sender = inbox_item.Sender.GetExchangeUser().PrimarySmtpAddress
+                    else:
+                        sender = inbox_item.SenderEmailAddress
+                else:
+                    sender = inbox_item.SenderEmailAddress
+    
+                unread_senders_raw_list.append(sender)
+                
+                continue
+            
+            else:
+                raise Exception
+                
         except Exception as e:
             append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
         
