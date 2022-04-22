@@ -62,7 +62,7 @@ IMPORTANT_EMAIL_PDF_FILE_NAME = TEMP_DIR + "\\" + TIME_STR + "_" + "b004.pdf"
 FINAL_REPORT_PDF_FILE_NAME = "C:\\WINDOWS\\Temp\\" + TIME_STR + "_" + "outlook_analyzer_report.pdf" 
 
 # For images that get put into pdf pages
-image_file_name_dict = {'blue': {"image_path": "true_blue.jpg", "x": "0", "y": "0", "w": "210", "h": "30"},
+IMAGE_FILE_NAME_DICT = {'blue': {"image_path": "true_blue.jpg", "x": "0", "y": "0", "w": "210", "h": "30"},
                         'icon': {"image_path": "icon.png", "x": "0", "y": "0", "w": "35", "h": "30"},
                         'word_cloud': {"image_path": WORD_CLOUD_IMAGE_FILE_NAME, "x": "0", "y": "175", "w": "210",
                                        "h": "95"},
@@ -520,7 +520,7 @@ def create_pdf_cover_page(message_counter_int,message_unread_counter_int):
 
 
         # Traverse through nested dictionary
-        for image_id, image_info in image_file_name_dict.items():
+        for image_id, image_info in IMAGE_FILE_NAME_DICT.items():
             # for troubleshooting
             # print("\nItem:", image_id)
             
