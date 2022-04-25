@@ -69,7 +69,7 @@ FINAL_REPORT_PDF_FILE_NAME = "C:\\WINDOWS\\Temp\\" + TIME_STR + "_" + "outlook_a
 
 IMAGE_FILE_NAME_DICT = {'blue': {"image_path": "black.jpg", "x": "0", "y": "0", "w": "210", "h": "30"},
                         'icon': {"image_path": "icon.png", "x": "0", "y": "0", "w": "35", "h": "30"},
-                        'word_cloud': {"image_path": WORD_CLOUD_IMAGE_FILE_NAME, "x": "-35", "y": "120", "w": "275", "h": "200"},
+                        'word_cloud': {"image_path": WORD_CLOUD_IMAGE_FILE_NAME, "x": "-35", "y": "100", "w": "275", "h": "250"},
                         'sender_plot': {"image_path": SENDER_PLOT_IMAGE_FILE_NAME, "x": "0", "y": "65", "w": "210", "h": "100"}}
 
 #Function to generate a list of errors that have occurred during progam execution; printed at end of run
@@ -588,8 +588,9 @@ def generate_word_cloud_viz():
         stop_words = ["said", "email", "s", "will", "u", "re", "3A", "2F", "safelinks", "reserved", "https"] + list(STOPWORDS) #customized stopword list
         
         #Generates word cloud
-        word_cloud = WordCloud(stopwords = stop_words).generate(str(wc_cleaned_content_file))
+        word_cloud = WordCloud(width=800, height=400, stopwords = stop_words).generate(str(wc_cleaned_content_file))
         plt.clf()
+        plt.figure( figsize=(10,8) )
         plt.imshow(word_cloud)
         plt.axis('off')
         plt.savefig(WORD_CLOUD_IMAGE_FILE_NAME)
