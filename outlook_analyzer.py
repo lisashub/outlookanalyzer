@@ -82,7 +82,7 @@ def extract_outlook_information(max_email_number_to_extract_input,date_start_inp
     categories_data_file = open(CATEGORIES_DATA_FILE_NAME, "w+", encoding = "utf-8")
     flagged_email_data_file = open(FLAGGED_EMAIL_DATA_FILE_NAME, "w+", encoding = "utf-8")
     important_email_data_file = open(IMPORTANT_EMAIL_DATA_FILE_NAME, "w+", encoding = "utf-8")
-    
+
     #Creates intermediate list and dictionary structure variable to store extracted information
     category_list = []
     counting_dict = {}
@@ -99,8 +99,6 @@ def extract_outlook_information(max_email_number_to_extract_input,date_start_inp
     message_read_counter_int = 0
     message_unread_counter_int = 0
     number_of_times_categories_assigned_counter_int = 0
-
-
 
     #Establishes how many months or days back the script should look for emails
     if date_end_input[-1] == "m": #Value will be "m" if user enters range in months
@@ -210,7 +208,7 @@ def extract_outlook_information(max_email_number_to_extract_input,date_start_inp
         except Exception as e:
             append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
 
-        #Follow-up and high importance email flag metric logic
+        #High importance email flag metric logic
         if (inbox_item.Importance == 2 and inbox_item.Class == 43): #Importace is 2 if item is marked as High Importance
             important_messages_dict = {} # To organize item information
             try:
@@ -253,15 +251,16 @@ def extract_outlook_information(max_email_number_to_extract_input,date_start_inp
             important_messages_list.append(important_messages_dict)
 
             important_count_int = important_count_int + 1
-        
+
+        # Count number of messages in loop
         message_counter_int = message_counter_int + 1
         #End of inbox item iteration loop
         
         #Checks if max number of emails has been reached       
         if message_counter_int >= int(max_email_number_to_extract_input):
             break
-    
-    #Iterates through to-do items; see comments associated with similar code above for additional insight 
+
+    #Iterates through to-do items and flagged email; see comments associated with similar code above for additional insight 
     tasks = todo_items.Restrict("[Complete] = FALSE")
     
     print("Extracting tasks/flagged items:")
@@ -371,9 +370,8 @@ def extract_outlook_information(max_email_number_to_extract_input,date_start_inp
     else:
         word_cloud_extract(messages)
         generate_word_cloud_viz()
-    
+
     create_pdf_cover_page(message_counter_int,message_unread_counter_int)
-    pdf_merge()
 
 #Extracts word cloud information from most recent 50 messages
 def word_cloud_extract(messages):
@@ -421,7 +419,6 @@ def generate_unread_senders_viz():
     except Exception as e:
         append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
 
-
 #Reformats item text data to UTF-8
 # Currently used by Flagged email and Important email metric
 def build_text_with_subject_senderemail_receivedtime(messages_list, email_data_file):
@@ -433,7 +430,7 @@ def build_text_with_subject_senderemail_receivedtime(messages_list, email_data_f
 
             if item['Class'] == 43: 
                 print('\n'.join(s.decode('utf-8', 'ignore') for s in item['subject']),"\t",item['SenderEmailAddress'], "\t", item['ReceivedTime'], file = email_data_file)
-            else:
+            else: # items from the todo folder do not have sender email address or received time
                 print('\n'.join(s.decode('utf-8', 'ignore') for s in item['subject']),"\t", "-", "\t", "-", file = email_data_file)
 
         email_data_file.close()
@@ -490,16 +487,19 @@ def convert_dict_to_df_to_figure_to_pdf(metric_dict, title_str, columns_list, pd
         append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
 
 # Code borrowed from https://stackoverflow.com/questions/3444645/merge-pdf-files
-def pdf_merge():
+def pdf_merge(open_file,output_file_name):
     ''' Merges all the pdf files in current directory '''
     merger = PdfFileMerger()
     location_to_check_str = TEMP_DIR + "\\" + "*.pdf"
     allpdfs = [a for a in glob(location_to_check_str)]
     [merger.append(pdf) for pdf in allpdfs]
-    with open(FINAL_REPORT_PDF_FILE_NAME, "wb") as new_file:
+    with open(output_file_name, "wb") as new_file:
         merger.write(new_file)
 
-    subprocess.Popen([FINAL_REPORT_PDF_FILE_NAME],shell=True)
+    merger.close()
+
+    if open_file:
+        subprocess.Popen([output_file_name],shell=True)
 
 def create_pdf_cover_page(message_counter_int,message_unread_counter_int):
 
@@ -671,6 +671,7 @@ def main(argv):
     date_start_input = "12m"
     date_end_input = "0m"
     suppress_prompt = False
+    open_file = True
 
     # Initialize parser
     parser = argparse.ArgumentParser()
@@ -679,6 +680,9 @@ def main(argv):
     parser.add_argument("-n", "--number", help = "Max number of email messages you would like to extract (between 50 and 100000)")
     parser.add_argument("-s", "--start", help = "From how far back would you like to collect and analyze emails in months or days (e.g. 10m, 12d)")
     parser.add_argument("-e", "--end", help = "What's the cutoff for the most recent emails you'd like to collect and analyze in months or days (e.g. 1m, 10d)")
+    parser.add_argument("-o", "--output", help = "Location to save the report (must used .pdf extension)")
+    parser.add_argument("-O", "--open", help = "Open the report at the end of script running?")
+
 
     # Read arguments from command line
     args = parser.parse_args()
@@ -699,6 +703,20 @@ def main(argv):
     if args.end:
         date_end_input = args.end
         print("end: " + str(date_end_input))
+
+    if args.output:
+        output_file_name = args.output
+        if not output_file_name.lower().endswith('.pdf'):
+            print("Error: Problem with output file extention.")
+            print("Please ensure that the extension is .pdf")
+            exit()
+        print("output: " + str(output_file_name))
+    else:
+         output_file_name = FINAL_REPORT_PDF_FILE_NAME
+
+    if args.open:
+        open_file = eval(args.open.capitalize())
+        print("open_file: " + str(open_file))
 
     if args.start or args.end:
         # Check if command line argument are an integer
@@ -722,7 +740,6 @@ def main(argv):
 
     # If arguments not provided at command line, ask for them
     if not suppress_prompt:
-
         
         if not args.number:
             #Receives and checks max numbebr of emails to extract
@@ -747,6 +764,7 @@ def main(argv):
                         break;
                 except ValueError:
                     print("This is not a valid format. Please enter as '##m' or '##d' where d is for days and m is for months  (e.g. 10d or 1m")
+
         if not args.end:
             #Receives and checks user input for email recency cut-off date
             while True:
@@ -765,6 +783,7 @@ def main(argv):
     # Begin email extraction
     extract_outlook_information(max_email_number_to_extract_input,date_start_input,date_end_input)
 
+    pdf_merge(open_file,output_file_name)
     # Clean left over temp .txt, .jpg, .png files from previous run if exist
     delete_temp_files([".txt",".jpg",".png"])
 

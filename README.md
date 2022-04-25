@@ -31,7 +31,7 @@ python3 outlook_analyzer.py --help
 
 Format for command line options is as follows:
 ```
-python3 outlook_analyzer.py -n <max number of email (e.g. 1000)> -s <starting point as months or days ago (e.g. 6m, 12d)> -e <end cutoff (e.g. 1m, 0d)>
+python3 outlook_analyzer.py -n <max number of email (e.g. 1000)> -s <starting point as months or days ago (e.g. 6m, 12d)> -e <end cutoff (e.g. 1m, 0d)> -O <open file after script completes - True|False> -o <out put file location>
 ```
 
 Some example so you can try:
@@ -39,8 +39,11 @@ Some example so you can try:
 python3 outlook_analyzer.py -n 100
 python3 outlook_analyzer.py -n 100 -s 6m
 python3 outlook_analyzer.py -n 100 -s 6m -e 6d
+python3 outlook_analyzer.py -n 100 -s 6m -e 6d -O True
+python3 outlook_analyzer.py -n 100 -s 6m -e 6d -O True -o 'C:/Users/me/Downloads/report.pdf'
 python3 outlook_analyzer.py --number 100 --start 6m --end 6d
 python3 outlook_analyzer.py --start 6m --end 6d --number 100
+
 ```
 
 If you only enter some but not all of the optional command line arguments then script will ask for the remaining arguments.
