@@ -61,23 +61,15 @@ FLAGGED_EMAIL_PDF_FILE_NAME = TEMP_DIR + "\\" + TIME_STR + "_" + "b003.pdf"
 IMPORTANT_EMAIL_PDF_FILE_NAME = TEMP_DIR + "\\" + TIME_STR + "_" + "b004.pdf"
 FINAL_REPORT_PDF_FILE_NAME = "C:\\WINDOWS\\Temp\\" + TIME_STR + "_" + "outlook_analyzer_report.pdf" 
 
-# For images that get put into pdf pages
-# IMAGE_FILE_NAME_DICT = {'icon'   : {"image_path": "icon.jpg", "x":"0", "y":"0", "w":"35", "h":"30"},
-#              'blue'   : {"image_path": "light_blue.jpg", "x":"35", "y":"0", "w":"175", "h":"30"},
-#              'word_cloud' : {"image_path": WORD_CLOUD_IMAGE_FILE_NAME, "x":"0", "y":"75", "w":"300", "h":"150"},
-#              'sender_plot'  :{"image_path": SENDER_PLOT_IMAGE_FILE_NAME, "x":"0", "y":"150", "w":"210", "h":"100"} }
-
 IMAGE_FILE_NAME_DICT = {'blue': {"image_path": "black.jpg", "x": "0", "y": "0", "w": "210", "h": "30"},
                         'icon': {"image_path": "icon.png", "x": "0", "y": "0", "w": "35", "h": "30"},
-                        'word_cloud': {"image_path": WORD_CLOUD_IMAGE_FILE_NAME, "x": "-35", "y": "120", "w": "275", "h": "200"},
+                        'word_cloud': {"image_path": WORD_CLOUD_IMAGE_FILE_NAME, "x": "-35", "y": "100", "w": "275", "h": "250"},
                         'sender_plot': {"image_path": SENDER_PLOT_IMAGE_FILE_NAME, "x": "0", "y": "65", "w": "210", "h": "100"}}
-
 
 
 def append_to_error_list(function_name, error_text):
     """Generates a list of errors that have occurred during progam execution which are printed at end of run."""
     ERROR_LIST.append("function: " + function_name + " | " +  "error: " + error_text)
-
 
 def extract_outlook_information(max_email_number_to_extract_input,date_start_input,date_end_input):
     """Connects to Outlook client and iterates through items. Collects relavent information from Outlook 
@@ -159,21 +151,16 @@ def extract_outlook_information(max_email_number_to_extract_input,date_start_inp
     #Iterates through inbox items and extracts relevant information
     filtered_messages.Sort("[ReceivedTime]",True)
     for inbox_item in tqdm(filtered_messages): # Displays tdqm progress bar during iteration
-        
+
         #Unread email metric logic
         try:
+            
             if (inbox_item.UnRead == True):
 
                 message_unread_counter_int = message_unread_counter_int + 1
-
-                if inbox_item.Class == 43: #Class "43" is assigned to VBA MailItem objects (i.e. regular emails):https://docs.microsoft.com/en-us/office/vba/api/outlook.olobjectclass
-                    if inbox_item.SenderEmailType == "EX": # SenderEmailType "EX" is assigned to MailItems received from internal MS Exchange
-                        sender = inbox_item.Sender.GetExchangeUser().PrimarySmtpAddress
-                    else:
-                        sender = inbox_item.SenderEmailAddress
-                else:
-                    sender = inbox_item.SenderEmailAddress
     
+                sender = return_sender(inbox_item)
+
                 unread_senders_raw_list.append(sender)
 
             else:
@@ -187,21 +174,7 @@ def extract_outlook_information(max_email_number_to_extract_input,date_start_inp
             
             if os.path.isfile(path):
                 
-                shutil.rmtree(path)
-                
-                message_unread_counter_int = message_unread_counter_int + 1
-
-                if inbox_item.Class == 43: #Class "43" is assigned to VBA MailItem objects (i.e. regular emails):https://docs.microsoft.com/en-us/office/vba/api/outlook.olobjectclass
-                    if inbox_item.SenderEmailType == "EX": # SenderEmailType "EX" is assigned to MailItems received from internal MS Exchange
-                        sender = inbox_item.Sender.GetExchangeUser().PrimarySmtpAddress
-                    else:
-                        sender = inbox_item.SenderEmailAddress
-                else:
-                    sender = inbox_item.SenderEmailAddress
-    
-                unread_senders_raw_list.append(sender)
-                
-                continue
+                shutil.rmtree(path)               
             
             else:
                 raise Exception
@@ -304,16 +277,7 @@ def extract_outlook_information(max_email_number_to_extract_input,date_start_inp
             except Exception as e:
                 append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
 
-            if task.SenderEmailType == "EX":
-                try:
-                    sender_email = task.Sender.GetExchangeUser().PrimarySmtpAddress
-                except Exception as e:
-                    append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
-            else:
-                try:
-                    sender_email = task.SenderEmailAddress
-                except Exception as e:
-                    append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
+            sender_email = return_sender(task)
 
             flagged_messages_dict['SenderEmailAddress'] = sender_email
 
@@ -336,13 +300,13 @@ def extract_outlook_information(max_email_number_to_extract_input,date_start_inp
     counting_dict['total email marked as important'] = important_count_int
 
     if message_counter_int < 1 or message_unread_counter_int < 1:
-        print("Isuffucient data to analyze unread email.")
+        print("Insufficient data to analyze unread email.")
     else:
         unread_senders_data_gen(unread_senders_raw_list, unread_senders_unique_dict,sender_data_file)
         generate_unread_senders_viz()
 
     if message_counter_int < 1 or categories_counter_int < 1:
-        print("Isuffucient data to analyze categories.")
+        print("Insufficient data to analyze categories.")
     else:
         category_data_gen(category_list, categories_data_file)
         
@@ -353,7 +317,7 @@ def extract_outlook_information(max_email_number_to_extract_input,date_start_inp
     
 
     if flagged_counter_int < 1:
-        print("Isuffucient data to analyze flagged messages.")
+        print("Insufficient data to analyze flagged messages.")
     else:
         # Converts collected data into a text file for flagged messages 
         build_text_with_subject_senderemail_receivedtime(flagged_messages_list, flagged_email_data_file)
@@ -364,12 +328,12 @@ def extract_outlook_information(max_email_number_to_extract_input,date_start_inp
         convert_csv_to_df_to_figure_to_pdf(FLAGGED_EMAIL_DATA_FILE_NAME,title_str,figure_column_list,FLAGGED_EMAIL_PDF_FILE_NAME)
 
     if message_counter_int < 1 or important_count_int < 1:
-        print("Isuffucient data to analyze important messages.")
+        print("Insufficient data to analyze important messages.")
     else:
         # Converts collected data into a text file for important messages 
         build_text_with_subject_senderemail_receivedtime(important_messages_list, important_email_data_file)
 
-        # Email that cames in as "Important
+        # Email that came in as "Important"
         title_str = "Email sent as Important"
         figure_column_list = ["Subject","Sender Email","Date"]
         convert_csv_to_df_to_figure_to_pdf(IMPORTANT_EMAIL_DATA_FILE_NAME,title_str,figure_column_list,IMPORTANT_EMAIL_PDF_FILE_NAME)
@@ -380,12 +344,26 @@ def extract_outlook_information(max_email_number_to_extract_input,date_start_inp
     convert_dict_to_df_to_figure_to_pdf(counting_dict, title_str,figure_column_list,COUNTING_PDF_FILE_NAME)
 
     if message_counter_int < 1 or message_unread_counter_int < 1:
-        print("Isuffucient data to analyze message content for word cloud.")
+        print("Insufficient data to analyze message content for word cloud.")
     else:
         word_cloud_extract(messages)
         generate_word_cloud_viz()
 
     create_pdf_cover_page(message_counter_int,message_unread_counter_int)
+
+
+def return_sender(outlook_object):
+    """ Returns sender email address """
+
+    if outlook_object.Class == 43: #Class "43" is assigned to VBA MailItem objects (i.e. regular emails):https://docs.microsoft.com/en-us/office/vba/api/outlook.olobjectclass
+        if outlook_object.SenderEmailType == "EX": # SenderEmailType "EX" is assigned to MailItems received from internal MS Exchange
+            sender = outlook_object.Sender.GetExchangeUser().PrimarySmtpAddress
+        else:
+            sender = outlook_object.SenderEmailAddress
+    else:
+        sender = outlook_object.SenderEmailAddress
+
+    return sender
 
 
 def word_cloud_extract(messages):
@@ -438,7 +416,7 @@ def generate_unread_senders_viz():
 
 # Currently used by Flagged email and Important email metric
 def build_text_with_subject_senderemail_receivedtime(messages_list, email_data_file):
-    ''' Reformats item text data to UTF-8 '''
+    """ Reformats item text data to UTF-8 """
     # Have to generate a text file to decode the utf8 data
     try:
 
@@ -454,15 +432,15 @@ def build_text_with_subject_senderemail_receivedtime(messages_list, email_data_f
         append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
 
 def category_data_gen(category_list,categories_data_file):
-    ''' Generates category data by using the 'category_list', runs it through the 'unique' function,
-    saves results into a dict, and then prints it on a text file with the variable 'categories_data_file' '''
+    """ Generates category data by using the 'category_list', runs it through the 'unique' function,
+    saves results into a dict, and then prints it on a text file with the variable 'categories_data_file' """
 
     category_dict = {} #dictionary variable to capture email category
     
     try:
         unique_categories = unique(category_list) #sends category list to function named "unique" and saves list of unique values to variable
 
-        for category in unique_categories: #loops through unique categories and counts occurrances; saves results into category_dict
+        for category in unique_categories: #loops through unique categories and counts occurrences; saves results into category_dict
             category_dict[category] = category_list.count(category)
         
         categories_counter_int = 0
@@ -478,13 +456,13 @@ def category_data_gen(category_list,categories_data_file):
         append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
 
 def convert_dict_to_df_to_figure_to_pdf(metric_dict, title_str, columns_list, pdf_file_name):
-    ''' Converts a dict into a data frame and then to a figure and exports it as a single pdf '''
+    """ Converts a dict into a data frame and then to a figure and exports it as a single pdf """
     try:
         #Pandas dataframe for passed in dict
         df = pd.DataFrame(metric_dict.items(), columns=columns_list)   
 
         fig, ax =plt.subplots()
-        plt.title(title_str)
+        plt.title(title_str, backgroundcolor='black', color='white')
         ax.axis('tight')
         ax.axis('off')
         table = ax.table(cellText=df.values, cellLoc='center', colLabels=df.columns, loc='center')
@@ -505,7 +483,7 @@ def convert_dict_to_df_to_figure_to_pdf(metric_dict, title_str, columns_list, pd
 
 # Code borrowed from https://stackoverflow.com/questions/3444645/merge-pdf-files
 def pdf_merge(open_file,output_file_name):
-    ''' Merges all the pdf files in current directory '''
+    """ Merges all the pdf files in current directory """
     merger = PdfFileMerger()
     location_to_check_str = TEMP_DIR + "\\" + "*.pdf"
     allpdfs = [a for a in glob(location_to_check_str)]
@@ -519,13 +497,13 @@ def pdf_merge(open_file,output_file_name):
         subprocess.Popen([output_file_name],shell=True)
 
 def create_pdf_cover_page(message_counter_int,message_unread_counter_int):
-    ''' Add images into a PDF file '''
+    """ Add images into a PDF file """
     try:
         # Code for creating first page of PDF report
         pdf = FPDF()
         pdf.add_page()  # adds pdf page
         pdf.set_font('Arial', 'B', 18)  # sets pdf fonts
-        pdf.cell(0, 60, 'Outlook Analzyer Report', 0, 0, align='C')  # Puts in title
+        pdf.cell(0, 60, 'Outlook Analyzer Report', 0, 0, align='C')  # Puts in title
         pdf.cell(-190, 75, NOW_DATE, 0, 0, align='C') # Puts in real time date
 
 
@@ -551,7 +529,7 @@ def create_pdf_cover_page(message_counter_int,message_unread_counter_int):
         append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
 
 def convert_csv_to_df_to_figure_to_pdf(email_data_file,title_str,columns_list,pdf_file_name):
-    ''' Converts a csv into a data frame and then to a figure and exports it as a single pdf '''
+    """ Converts a csv into a data frame and then to a figure and exports it as a single pdf """
     try:
         df = pd.read_csv(email_data_file, sep = "\t", encoding ='utf-8', names=columns_list)
         
@@ -561,7 +539,7 @@ def convert_csv_to_df_to_figure_to_pdf(email_data_file,title_str,columns_list,pd
                     df.at[i, "Subject"] = df.at[i, "Subject"][0:46] + "..." #truncates subject
 
         fig, ax =plt.subplots(figsize=(12,4))
-        plt.title(title_str)
+        plt.title(title_str, backgroundcolor='black', color='white')
         ax.axis('tight')
         ax.axis('off')
         table = ax.table(cellText=df.values, cellLoc='center', colLabels=df.columns, loc='center')
@@ -583,7 +561,6 @@ def convert_csv_to_df_to_figure_to_pdf(email_data_file,title_str,columns_list,pd
     except Exception as e:
         append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
 
-#Generates word cloud visualization
 def generate_word_cloud_viz():
     """Creates wordcloud from email body text and saves as local image."""
     try:
@@ -593,8 +570,9 @@ def generate_word_cloud_viz():
         stop_words = ["said", "email", "s", "will", "u", "re", "3A", "2F", "safelinks", "reserved", "https"] + list(STOPWORDS) #customized stopword list
         
         #Generates word cloud
-        word_cloud = WordCloud(stopwords = stop_words).generate(str(wc_cleaned_content_file))
+        word_cloud = WordCloud(width=800, height=400, stopwords = stop_words).generate(str(wc_cleaned_content_file))
         plt.clf()
+        plt.rcParams["figure.figsize"] = (10,8)
         plt.imshow(word_cloud)
         plt.axis('off')
         plt.savefig(WORD_CLOUD_IMAGE_FILE_NAME)
@@ -604,17 +582,15 @@ def generate_word_cloud_viz():
 
 #Code borrowed from https://stackoverflow.com/questions/49267999/remove-u202a-from-python-string
 def cleanup(inp):
-    ''' Removes converse characters ("\u202a") and pop directional formatting characters from strings ("\u202c") '''
-
+    """ Removes converse characters ("\u202a") and pop directional formatting characters from strings ("\u202c") """
     new_char = ""
     for char in inp:
         if char not in ["\u202a", "\u202c"]:
             new_char += char
     return new_char
 
- # Goes through directory and removes/cleans the files with specified extensions (i.e .txt, .tmp, .png, etc.)
 def delete_temp_files(type_list):
-    ''' Goes through directory and removes/cleans the files with specified extensions (i.e .txt, .tmp, .png, etc.) '''
+    """ Goes through directory and removes/cleans the files with specified extensions (i.e .txt, .tmp, .png, etc.) """
     while True:
 
         for item_type in type_list: # looping over the file type to remove
@@ -641,7 +617,7 @@ def word_cloud_content_clean():
         #Create indices counter variable
         indices_counter_int = 0
         
-        #Assigns variables to tags preceeding link information
+        #Assigns variables to tags preceding link information
         sub1 = '<http'
         sub2 = '<mail'
         
@@ -672,9 +648,8 @@ def word_cloud_content_clean():
         append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
 
 
-#Identifiies unique elements within a list
 def unique (list1):
-    ''' Identifies unique elements within a list '''
+    """ Identifies unique elements within a list """
     unique_elements_list = []
     for item in list1:
         if item not in unique_elements_list:
@@ -690,7 +665,7 @@ def is_integer_num(n):
     return False
 
 def main(argv):  
-    ''' Runs through the specified inputs that users will enter to get their analyze data for Outlook '''
+    """ Runs through the specified inputs that users will enter to get their analysis data for Outlook """
     max_email_number_to_extract_input = 500
     date_start_input = "12m"
     date_end_input = "0m"
@@ -715,7 +690,7 @@ def main(argv):
         max_email_number_to_extract_input = args.number
         print("number: " +  str(max_email_number_to_extract_input))
 
-        if int(max_email_number_to_extract_input) < 50 and int(max_email_number_to_extract_input) > 100000:
+        if int(max_email_number_to_extract_input) < 50 or int(max_email_number_to_extract_input) > 100000:
             print("Error: Problem with email number argument.")
             print("Please enter a valid integer between 50 and 100000.")
             exit()
@@ -731,7 +706,7 @@ def main(argv):
     if args.output:
         output_file_name = args.output
         if not output_file_name.lower().endswith('.pdf'):
-            print("Error: Problem with output file extention.")
+            print("Error: Problem with output file extension.")
             print("Please ensure that the extension is .pdf")
             exit()
         print("output: " + str(output_file_name))
@@ -755,7 +730,7 @@ def main(argv):
             print("This is not a valid format. Please enter as '##m' or '##d' where d is for days and m is for months  (e.g. 10d or 1m)")
             exit()
   
-    # If all three command line arguments are supplied, supress asking for more input
+    # If all three command line arguments are supplied, suppress asking for more input
     if args.number and args.start and args.end:
         suppress_prompt = True
 
@@ -771,7 +746,7 @@ def main():
     if not suppress_prompt:
         
         if not args.number:
-            #Receives and checks max numbebr of emails to extract
+            #Receives and checks max number of emails to extract
             while True:
                 max_email_number_to_extract_input = input("Max number of email messages you would like to extract (between 50 and 100000)? (Hit Enter for default: 500)") or 500
 

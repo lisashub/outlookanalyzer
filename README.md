@@ -40,17 +40,17 @@ python3 outlook_analyzer.py -n 100
 python3 outlook_analyzer.py -n 100 -s 6m
 python3 outlook_analyzer.py -n 100 -s 6m -e 6d
 python3 outlook_analyzer.py -n 100 -s 6m -e 6d -O True
-python3 outlook_analyzer.py -n 100 -s 6m -e 6d -O True -o 'C:/Users/me/Downloads/report.pdf'
+python3 outlook_analyzer.py -n 700 -s 6m -e 6d -O False -o 'C:/Users/me/Downloads/report.pdf'
 python3 outlook_analyzer.py --number 100 --start 6m --end 6d
 python3 outlook_analyzer.py --start 6m --end 6d --number 100
 
 ```
 
-If you only enter some but not all of the optional command line arguments then script will ask for the remaining arguments.
+If you only enter some but not all of the optional command line arguments then script will ask for the remaining arguments for number, start and end. If no command line arguments for "open" or "output" are provided then the defaults are used. Report will be saved to 'C:\WINDOWS\Temp\outlook_analyzer_report.pdf' and the pdf file will be opened after script runs.
 
 ## Understanding Script Variable Naming Standards
 - Camel case is used when required for MS object model variables
 - Uppercase is used for global variables (e.g. OUTPUT_NAME_STR)
 - Lower case is used with an underscore between words for variables used in the script and within functions (variable_name_str)
-- Data type is appended to the end of the variable (dict, str, int, etc).
+- In general, data type is appended to the end of the variable (dict, str, int, etc) but may not be applied to all variables.
 - Identations is handled with four spaces
