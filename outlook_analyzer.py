@@ -362,7 +362,7 @@ def extract_outlook_information(max_email_number_to_extract_input,date_start_inp
 
 
 def return_sender(outlook_object):
-    ''' Returns sender email address '''
+    """ Returns sender email address """
 
     if outlook_object.Class == 43: #Class "43" is assigned to VBA MailItem objects (i.e. regular emails):https://docs.microsoft.com/en-us/office/vba/api/outlook.olobjectclass
         if outlook_object.SenderEmailType == "EX": # SenderEmailType "EX" is assigned to MailItems received from internal MS Exchange
@@ -420,10 +420,9 @@ def generate_unread_senders_viz():
     except Exception as e:
         append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
 
-#Reformats item text data to UTF-8
 # Currently used by Flagged email and Important email metric
 def build_text_with_subject_senderemail_receivedtime(messages_list, email_data_file):
-    ''' Reformats item text data to UTF-8 '''
+    """ Reformats item text data to UTF-8 """
     # Have to generate a text file to decode the utf8 data
     try:
 
@@ -441,8 +440,8 @@ def build_text_with_subject_senderemail_receivedtime(messages_list, email_data_f
 #Generates categories metric data
 def category_data_gen(category_list,categories_data_file):
 
-    ''' Generates category data by using the 'category_list', runs it through the 'unique' function,
-    saves results into a dict, and then prints it on a text file with the variable 'categories_data_file' '''
+    """ Generates category data by using the 'category_list', runs it through the 'unique' function,
+    saves results into a dict, and then prints it on a text file with the variable 'categories_data_file' """
 
     category_dict = {} #dictionary variable to capture email category
     
@@ -465,7 +464,7 @@ def category_data_gen(category_list,categories_data_file):
         append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
 
 def convert_dict_to_df_to_figure_to_pdf(metric_dict, title_str, columns_list, pdf_file_name):
-    ''' Converts a dict into a data frame and then to a figure and exports it as a single pdf '''
+    """ Converts a dict into a data frame and then to a figure and exports it as a single pdf """
     try:
         #Pandas dataframe for passed in dict
         df = pd.DataFrame(metric_dict.items(), columns=columns_list)   
@@ -492,7 +491,7 @@ def convert_dict_to_df_to_figure_to_pdf(metric_dict, title_str, columns_list, pd
 
 # Code borrowed from https://stackoverflow.com/questions/3444645/merge-pdf-files
 def pdf_merge(open_file,output_file_name):
-    ''' Merges all the pdf files in current directory '''
+    """ Merges all the pdf files in current directory """
     merger = PdfFileMerger()
     location_to_check_str = TEMP_DIR + "\\" + "*.pdf"
     allpdfs = [a for a in glob(location_to_check_str)]
@@ -507,7 +506,7 @@ def pdf_merge(open_file,output_file_name):
 
 def create_pdf_cover_page(message_counter_int,message_unread_counter_int):
 
-    ''' Add images into a PDF file '''
+    """ Add images into a PDF file """
     try:
         # Code for creating first page of PDF report
         pdf = FPDF()
@@ -539,7 +538,7 @@ def create_pdf_cover_page(message_counter_int,message_unread_counter_int):
         append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
 
 def convert_csv_to_df_to_figure_to_pdf(email_data_file,title_str,columns_list,pdf_file_name):
-    ''' Converts a csv into a data frame and then to a figure and exports it as a single pdf '''
+    """ Converts a csv into a data frame and then to a figure and exports it as a single pdf """
     try:
         df = pd.read_csv(email_data_file, sep = "\t", encoding ='utf-8', names=columns_list)
         
@@ -592,7 +591,7 @@ def generate_word_cloud_viz():
 #Function to remove converse characters ("\u202a") and pop directional formatting characters from strings ("\u202c")
 #Code borrowed from https://stackoverflow.com/questions/49267999/remove-u202a-from-python-string
 def cleanup(inp):
-    ''' Removes converse characters ("\u202a") and pop directional formatting characters from strings ("\u202c") '''
+    """ Removes converse characters ("\u202a") and pop directional formatting characters from strings ("\u202c") """
     new_char = ""
     for char in inp:
         if char not in ["\u202a", "\u202c"]:
@@ -601,7 +600,7 @@ def cleanup(inp):
 
  # Goes through directory and removes/cleans the files with specified extensions (i.e .txt, .tmp, .png, etc.)
 def delete_temp_files(type_list):
-    ''' Goes through directory and removes/cleans the files with specified extensions (i.e .txt, .tmp, .png, etc.) '''
+    """ Goes through directory and removes/cleans the files with specified extensions (i.e .txt, .tmp, .png, etc.) """
     while True:
 
         for item_type in type_list: # looping over the file type to remove
@@ -659,7 +658,7 @@ def word_cloud_content_clean():
 
 #Identifiies unique elements within a list
 def unique (list1):
-    ''' Identifies unique elements within a list '''
+    """ Identifies unique elements within a list """
     unique_elements_list = []
     for item in list1:
         if item not in unique_elements_list:
@@ -675,7 +674,7 @@ def is_integer_num(n):
     return False
 
 def main(argv):  
-    ''' Runs through the specified inputs that users will enter to get their analyze data for Outlook '''
+    """ Runs through the specified inputs that users will enter to get their analyze data for Outlook """
     max_email_number_to_extract_input = 500
     date_start_input = "12m"
     date_end_input = "0m"
