@@ -66,11 +66,11 @@ IMAGE_FILE_NAME_DICT = {'blue': {"image_path": "black.jpg", "x": "0", "y": "0", 
                         'word_cloud': {"image_path": WORD_CLOUD_IMAGE_FILE_NAME, "x": "-35", "y": "100", "w": "275", "h": "250"},
                         'sender_plot': {"image_path": SENDER_PLOT_IMAGE_FILE_NAME, "x": "0", "y": "65", "w": "210", "h": "100"}}
 
-#Function to generate a list of errors that have occurred during progam execution; printed at end of run
+#Function to generate a list of errors that have occurred during program execution; printed at end of run
 def append_to_error_list(function_name, error_text, optArg = None): #added optional argument for more detail
     ERROR_LIST.append("function: " + function_name + " | " +  "error: " + error_text)
 
-#Function to extract relavent Outlook information from user's desktop client
+#Function to extract relevant Outlook information from user's desktop client
 def extract_outlook_information(max_email_number_to_extract_input,date_start_input,date_end_input): #to modify as new features required
 
     #Connection to Outlook object model established
@@ -171,7 +171,7 @@ def extract_outlook_information(max_email_number_to_extract_input,date_start_inp
             path = os.environ['USERPROFILE']+"\AppData\Local\Temp\gen_py"
             
             # I think this should be 'os.path.isdir' but then it fails because python is using it and cannot remove it
-            # This probably should be a separate file as a fix to do outside of the analzyer code logic
+            # This probably should be a separate file as a fix to do outside of the analyzer code logic
             if os.path.isfile(path):
                 
                 shutil.rmtree(path)
@@ -310,13 +310,13 @@ def extract_outlook_information(max_email_number_to_extract_input,date_start_inp
     counting_dict['total email marked as important'] = important_count_int
 
     if message_counter_int < 1 or message_unread_counter_int < 1:
-        print("Isuffucient data to analyze unread email.")
+        print("Insufficient data to analyze unread email.")
     else:
         unread_senders_data_gen(unread_senders_raw_list, unread_senders_unique_dict,sender_data_file)
         generate_unread_senders_viz()
 
     if message_counter_int < 1 or categories_counter_int < 1:
-        print("Isuffucient data to analyze categories.")
+        print("Insufficient data to analyze categories.")
     else:
         category_data_gen(category_list, categories_data_file)
         
@@ -326,7 +326,7 @@ def extract_outlook_information(max_email_number_to_extract_input,date_start_inp
         convert_csv_to_df_to_figure_to_pdf(CATEGORIES_DATA_FILE_NAME,title_str,figure_column_list,CATEGORIES_PDF_FILE_NAME)
     
     if flagged_counter_int < 1:
-        print("Isuffucient data to analyze flagged messages.")
+        print("Insufficient data to analyze flagged messages.")
     else:
         # Converts collected data into a text file for flagged messages 
         build_text_with_subject_senderemail_receivedtime(flagged_messages_list, flagged_email_data_file)
@@ -337,12 +337,12 @@ def extract_outlook_information(max_email_number_to_extract_input,date_start_inp
         convert_csv_to_df_to_figure_to_pdf(FLAGGED_EMAIL_DATA_FILE_NAME,title_str,figure_column_list,FLAGGED_EMAIL_PDF_FILE_NAME)
 
     if message_counter_int < 1 or important_count_int < 1:
-        print("Isuffucient data to analyze important messages.")
+        print("Insufficient data to analyze important messages.")
     else:
         # Converts collected data into a text file for important messages 
         build_text_with_subject_senderemail_receivedtime(important_messages_list, important_email_data_file)
 
-        # Email that cames in as "Important"
+        # Email that came in as "Important"
         title_str = "Email sent as Important"
         figure_column_list = ["Subject","Sender Email","Date"]
         convert_csv_to_df_to_figure_to_pdf(IMPORTANT_EMAIL_DATA_FILE_NAME,title_str,figure_column_list,IMPORTANT_EMAIL_PDF_FILE_NAME)
@@ -353,7 +353,7 @@ def extract_outlook_information(max_email_number_to_extract_input,date_start_inp
     convert_dict_to_df_to_figure_to_pdf(counting_dict, title_str,figure_column_list,COUNTING_PDF_FILE_NAME)
 
     if message_counter_int < 1 or message_unread_counter_int < 1:
-        print("Isuffucient data to analyze message content for word cloud.")
+        print("Insufficient data to analyze message content for word cloud.")
     else:
         word_cloud_extract(messages)
         generate_word_cloud_viz()
@@ -448,7 +448,7 @@ def category_data_gen(category_list,categories_data_file):
     try:
         unique_categories = unique(category_list) #sends category list to function named "unique" and saves list of unique values to variable
 
-        for category in unique_categories: #loops through unique categories and counts occurrances; saves results into category_dict
+        for category in unique_categories: #loops through unique categories and counts occurrences; saves results into category_dict
             category_dict[category] = category_list.count(category)
         
         categories_counter_int = 0
@@ -512,7 +512,7 @@ def create_pdf_cover_page(message_counter_int,message_unread_counter_int):
         pdf = FPDF()
         pdf.add_page()  # adds pdf page
         pdf.set_font('Arial', 'B', 18)  # sets pdf fonts
-        pdf.cell(0, 60, 'Outlook Analzyer Report', 0, 0, align='C')  # Puts in title
+        pdf.cell(0, 60, 'Outlook Analyzer Report', 0, 0, align='C')  # Puts in title
         pdf.cell(-190, 75, NOW_DATE, 0, 0, align='C') # Puts in real time date
 
 
@@ -626,7 +626,7 @@ def word_cloud_content_clean():
         #Create indices counter variable
         indices_counter_int = 0
         
-        #Assigns variables to tags preceeding link information
+        #Assigns variables to tags preceding link information
         sub1 = '<http'
         sub2 = '<mail'
         
@@ -674,7 +674,7 @@ def is_integer_num(n):
     return False
 
 def main(argv):  
-    """ Runs through the specified inputs that users will enter to get their analyze data for Outlook """
+    """ Runs through the specified inputs that users will enter to get their analysis data for Outlook """
     max_email_number_to_extract_input = 500
     date_start_input = "12m"
     date_end_input = "0m"
@@ -699,7 +699,7 @@ def main(argv):
         max_email_number_to_extract_input = args.number
         print("number: " +  str(max_email_number_to_extract_input))
 
-        if int(max_email_number_to_extract_input) < 50 and int(max_email_number_to_extract_input) > 100000:
+        if int(max_email_number_to_extract_input) < 50 or int(max_email_number_to_extract_input) > 100000:
             print("Error: Problem with email number argument.")
             print("Please enter a valid integer between 50 and 100000.")
             exit()
@@ -715,7 +715,7 @@ def main(argv):
     if args.output:
         output_file_name = args.output
         if not output_file_name.lower().endswith('.pdf'):
-            print("Error: Problem with output file extention.")
+            print("Error: Problem with output file extension.")
             print("Please ensure that the extension is .pdf")
             exit()
         print("output: " + str(output_file_name))
@@ -739,7 +739,7 @@ def main(argv):
             print("This is not a valid format. Please enter as '##m' or '##d' where d is for days and m is for months  (e.g. 10d or 1m)")
             exit()
   
-    # If all three command line arguments are supplied, supress asking for more input
+    # If all three command line arguments are supplied, suppress asking for more input
     if args.number and args.start and args.end:
         suppress_prompt = True
 
@@ -750,7 +750,7 @@ def main(argv):
     if not suppress_prompt:
         
         if not args.number:
-            #Receives and checks max numbebr of emails to extract
+            #Receives and checks max number of emails to extract
             while True:
                 max_email_number_to_extract_input = input("Max number of email messages you would like to extract (between 50 and 100000)? (Hit Enter for default: 500)") or 500
 
