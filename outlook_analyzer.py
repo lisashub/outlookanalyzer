@@ -170,21 +170,9 @@ def extract_outlook_information(max_email_number_to_extract_input,date_start_inp
             
             path = os.environ['USERPROFILE']+"\AppData\Local\Temp\gen_py"
             
-            # I think this should be 'os.path.isdir' but then it fails because python is using it and cannot remove it
-            # This probably should be a separate file as a fix to do outside of the analyzer code logic
             if os.path.isfile(path):
                 
-                shutil.rmtree(path)
-                
-                # If we are going to count message_unread_counter_int, shouldn't the message_read_counter_int also be included?
-                # then we would need the logic for if (inbox_item.UnRead == True): ?
-                message_unread_counter_int = message_unread_counter_int + 1
-    
-                sender = return_sender(inbox_item)
-
-                unread_senders_raw_list.append(sender)
-                
-                continue
+                shutil.rmtree(path)               
             
             else:
                 raise Exception
@@ -359,7 +347,6 @@ def extract_outlook_information(max_email_number_to_extract_input,date_start_inp
         generate_word_cloud_viz()
 
     create_pdf_cover_page(message_counter_int,message_unread_counter_int)
-
 
 def return_sender(outlook_object):
     """ Returns sender email address """
@@ -581,14 +568,13 @@ def generate_word_cloud_viz():
         #Generates word cloud
         word_cloud = WordCloud(width=800, height=400, stopwords = stop_words).generate(str(wc_cleaned_content_file))
         plt.clf()
-        plt.figure( figsize=(10,8) )
+        plt.rcParams["figure.figsize"] = (10,8)
         plt.imshow(word_cloud)
         plt.axis('off')
         plt.savefig(WORD_CLOUD_IMAGE_FILE_NAME)
     except Exception as e:
         append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
 
-#Function to remove converse characters ("\u202a") and pop directional formatting characters from strings ("\u202c")
 #Code borrowed from https://stackoverflow.com/questions/49267999/remove-u202a-from-python-string
 def cleanup(inp):
     """ Removes converse characters ("\u202a") and pop directional formatting characters from strings ("\u202c") """
@@ -598,7 +584,6 @@ def cleanup(inp):
             new_char += char
     return new_char
 
- # Goes through directory and removes/cleans the files with specified extensions (i.e .txt, .tmp, .png, etc.)
 def delete_temp_files(type_list):
     """ Goes through directory and removes/cleans the files with specified extensions (i.e .txt, .tmp, .png, etc.) """
     while True:
@@ -656,7 +641,6 @@ def word_cloud_content_clean():
     except Exception as e:
         append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
 
-#Identifiies unique elements within a list
 def unique (list1):
     """ Identifies unique elements within a list """
     unique_elements_list = []
