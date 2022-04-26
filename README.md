@@ -52,5 +52,5 @@ If you only enter some but not all of the optional command line arguments then s
 - Camel case is used when required for MS object model variables
 - Uppercase is used for global variables (e.g. OUTPUT_NAME_STR)
 - Lower case is used with an underscore between words for variables used in the script and within functions (variable_name_str)
-- Data type is appended to the end of the variable (dict, str, int, etc).
+- In general, data type is appended to the end of the variable (dict, str, int, etc) but may not be applied to all variables.
 - Identations is handled with four spaces

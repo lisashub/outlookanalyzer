@@ -61,12 +61,6 @@ FLAGGED_EMAIL_PDF_FILE_NAME = TEMP_DIR + "\\" + TIME_STR + "_" + "b003.pdf"
 IMPORTANT_EMAIL_PDF_FILE_NAME = TEMP_DIR + "\\" + TIME_STR + "_" + "b004.pdf"
 FINAL_REPORT_PDF_FILE_NAME = "C:\\WINDOWS\\Temp\\" + TIME_STR + "_" + "outlook_analyzer_report.pdf" 
 
-# For images that get put into pdf pages
-# IMAGE_FILE_NAME_DICT = {'icon'   : {"image_path": "icon.jpg", "x":"0", "y":"0", "w":"35", "h":"30"},
-#              'blue'   : {"image_path": "light_blue.jpg", "x":"35", "y":"0", "w":"175", "h":"30"},
-#              'word_cloud' : {"image_path": WORD_CLOUD_IMAGE_FILE_NAME, "x":"0", "y":"75", "w":"300", "h":"150"},
-#              'sender_plot'  :{"image_path": SENDER_PLOT_IMAGE_FILE_NAME, "x":"0", "y":"150", "w":"210", "h":"100"} }
-
 IMAGE_FILE_NAME_DICT = {'blue': {"image_path": "black.jpg", "x": "0", "y": "0", "w": "210", "h": "30"},
                         'icon': {"image_path": "icon.png", "x": "0", "y": "0", "w": "35", "h": "30"},
                         'word_cloud': {"image_path": WORD_CLOUD_IMAGE_FILE_NAME, "x": "-35", "y": "100", "w": "275", "h": "250"},
@@ -155,21 +149,16 @@ def extract_outlook_information(max_email_number_to_extract_input,date_start_inp
     #Iterates through inbox items and extracts relevant information
     filtered_messages.Sort("[ReceivedTime]",True)
     for inbox_item in tqdm(filtered_messages): # Displays tdqm progress bar during iteration
-        
+
         #Unread email metric logic
         try:
+            
             if (inbox_item.UnRead == True):
 
                 message_unread_counter_int = message_unread_counter_int + 1
-
-                if inbox_item.Class == 43: #Class "43" is assigned to VBA MailItem objects (i.e. regular emails):https://docs.microsoft.com/en-us/office/vba/api/outlook.olobjectclass
-                    if inbox_item.SenderEmailType == "EX": # SenderEmailType "EX" is assigned to MailItems received from internal MS Exchange
-                        sender = inbox_item.Sender.GetExchangeUser().PrimarySmtpAddress
-                    else:
-                        sender = inbox_item.SenderEmailAddress
-                else:
-                    sender = inbox_item.SenderEmailAddress
     
+                sender = return_sender(inbox_item)
+
                 unread_senders_raw_list.append(sender)
 
             else:
@@ -181,20 +170,18 @@ def extract_outlook_information(max_email_number_to_extract_input,date_start_inp
             
             path = os.environ['USERPROFILE']+"\AppData\Local\Temp\gen_py"
             
+            # I think this should be 'os.path.isdir' but then it fails because python is using it and cannot remove it
+            # This probably should be a separate file as a fix to do outside of the analzyer code logic
             if os.path.isfile(path):
                 
                 shutil.rmtree(path)
                 
+                # If we are going to count message_unread_counter_int, shouldn't the message_read_counter_int also be included?
+                # then we would need the logic for if (inbox_item.UnRead == True): ?
                 message_unread_counter_int = message_unread_counter_int + 1
-
-                if inbox_item.Class == 43: #Class "43" is assigned to VBA MailItem objects (i.e. regular emails):https://docs.microsoft.com/en-us/office/vba/api/outlook.olobjectclass
-                    if inbox_item.SenderEmailType == "EX": # SenderEmailType "EX" is assigned to MailItems received from internal MS Exchange
-                        sender = inbox_item.Sender.GetExchangeUser().PrimarySmtpAddress
-                    else:
-                        sender = inbox_item.SenderEmailAddress
-                else:
-                    sender = inbox_item.SenderEmailAddress
     
+                sender = return_sender(inbox_item)
+
                 unread_senders_raw_list.append(sender)
                 
                 continue
@@ -300,16 +287,7 @@ def extract_outlook_information(max_email_number_to_extract_input,date_start_inp
             except Exception as e:
                 append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
 
-            if task.SenderEmailType == "EX":
-                try:
-                    sender_email = task.Sender.GetExchangeUser().PrimarySmtpAddress
-                except Exception as e:
-                    append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
-            else:
-                try:
-                    sender_email = task.SenderEmailAddress
-                except Exception as e:
-                    append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
+            sender_email = return_sender(task)
 
             flagged_messages_dict['SenderEmailAddress'] = sender_email
 
@@ -364,7 +342,7 @@ def extract_outlook_information(max_email_number_to_extract_input,date_start_inp
         # Converts collected data into a text file for important messages 
         build_text_with_subject_senderemail_receivedtime(important_messages_list, important_email_data_file)
 
-        # Email that cames in as "Important
+        # Email that cames in as "Important"
         title_str = "Email sent as Important"
         figure_column_list = ["Subject","Sender Email","Date"]
         convert_csv_to_df_to_figure_to_pdf(IMPORTANT_EMAIL_DATA_FILE_NAME,title_str,figure_column_list,IMPORTANT_EMAIL_PDF_FILE_NAME)
@@ -381,6 +359,20 @@ def extract_outlook_information(max_email_number_to_extract_input,date_start_inp
         generate_word_cloud_viz()
 
     create_pdf_cover_page(message_counter_int,message_unread_counter_int)
+
+
+def return_sender(outlook_object):
+    ''' Returns sender email address '''
+
+    if outlook_object.Class == 43: #Class "43" is assigned to VBA MailItem objects (i.e. regular emails):https://docs.microsoft.com/en-us/office/vba/api/outlook.olobjectclass
+        if outlook_object.SenderEmailType == "EX": # SenderEmailType "EX" is assigned to MailItems received from internal MS Exchange
+            sender = outlook_object.Sender.GetExchangeUser().PrimarySmtpAddress
+        else:
+            sender = outlook_object.SenderEmailAddress
+    else:
+        sender = outlook_object.SenderEmailAddress
+
+    return sender
 
 #Extracts word cloud information from most recent 50 messages
 def word_cloud_extract(messages):
@@ -479,7 +471,7 @@ def convert_dict_to_df_to_figure_to_pdf(metric_dict, title_str, columns_list, pd
         df = pd.DataFrame(metric_dict.items(), columns=columns_list)   
 
         fig, ax =plt.subplots()
-        plt.title(title_str)
+        plt.title(title_str, backgroundcolor='black', color='white')
         ax.axis('tight')
         ax.axis('off')
         table = ax.table(cellText=df.values, cellLoc='center', colLabels=df.columns, loc='center')
@@ -557,7 +549,7 @@ def convert_csv_to_df_to_figure_to_pdf(email_data_file,title_str,columns_list,pd
                     df.at[i, "Subject"] = df.at[i, "Subject"][0:46] + "..." #truncates subject
 
         fig, ax =plt.subplots(figsize=(12,4))
-        plt.title(title_str)
+        plt.title(title_str, backgroundcolor='black', color='white')
         ax.axis('tight')
         ax.axis('off')
         table = ax.table(cellText=df.values, cellLoc='center', colLabels=df.columns, loc='center')
