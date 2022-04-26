@@ -168,7 +168,7 @@ def extract_outlook_information(max_email_number_to_extract_input,date_start_inp
                 message_read_counter_int = message_read_counter_int + 1
                 
         except AttributeError as e: #Addresses issue where win32 package is occasionally unable to access "gen_py" directory
-            append_to_error_list(str(sys._getframe().f_code.co_name),str(e),"attribute error detected; rerun extraction for accurate read/unread data")
+            append_to_error_list(str(sys._getframe().f_code.co_name),str(e),"attribute error detected; rerun extraction for accurate data")
             path = os.environ['USERPROFILE']+"\AppData\Local\Temp\gen_py"
             if os.path.isdir(path):
                 
