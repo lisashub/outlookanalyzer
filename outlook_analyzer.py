@@ -45,14 +45,17 @@ SENDER_PLOT_FILE_NAME = TEMP_DIR + "\\" + TIME_STR + "_" + "sender_plot.jpg"
 CATEGORIES_IMAGE_FILE_NAME = TEMP_DIR + "\\" + TIME_STR + "_" + "categories.jpg"
 COUNTING_IMAGE_FILE_NAME = TEMP_DIR + "\\" + TIME_STR + "_" + "counting.jpg"
 
-#Function to generate a list of errors that have occurred during progam execution; printed at end of run
+
 def append_to_error_list(function_name, error_text):
+    """Generates a list of errors that have occurred during progam execution which are printed at end of run."""
     ERROR_LIST.append("function: " + function_name + " | " +  "error: " + error_text)
 
-#Function to extract relavent Outlook information from user's desktop client
-def extract_outlook_information(max_email_number_to_extract_input,date_start_input,date_end_input): #to modify as new features required
 
-    #Connection to Outlook object model established
+def extract_outlook_information(max_email_number_to_extract_input,date_start_input,date_end_input):
+    """Connects to Outlook client and iterates through items. Collects relavent information from Outlook 
+    desktop client."""
+
+    #Establishes connection to client
     outlook = win32com.client.Dispatch("Outlook.Application").GetNamespace("MAPI")
     inbox = outlook.GetDefaultFolder(6)
     todo_folder = outlook.GetDefaultFolder(28) #outlook.GetDefaultFolder(28) is for the todo/flagged items
@@ -151,7 +154,7 @@ def extract_outlook_information(max_email_number_to_extract_input,date_start_inp
             else:
                 message_read_counter_int = message_read_counter_int + 1
                 
-        except AttributeError as e:
+        except AttributeError as e: #Addresses issue where win32 package is occasionally unable to access "gen_py" directory
             
             append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
             
@@ -322,21 +325,23 @@ def extract_outlook_information(max_email_number_to_extract_input,date_start_inp
     word_cloud_extract(messages)
     generate_word_cloud_viz()
     
-#Extracts word cloud information from most recent 50 messages
+
 def word_cloud_extract(messages):
+    """Extracts word cloud information from most recent 50 messages."""
     try:
-     wc_file = open(WORD_CLOUD_FILE_NAME, "w+", encoding = "utf-8") #creates data file
+     wc_file = open(WORD_CLOUD_FILE_NAME, "w+", encoding = "utf-8") #Creates data file for word cloud data
      i = 0
      while (i<50):
          print(messages[i].Body, file = wc_file)
          i = i + 1
-     word_cloud_content_clean() #text-cleaning function called
+     word_cloud_content_clean() #Calls word cloud text-cleaning function
      wc_file.close()
     except Exception as e:
         append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
 
-#Generates data for unread senders plot
+
 def unread_senders_data_gen(unread_senders_raw_list,unread_senders_unique_dict,sender_data_file):
+    """Creates a sorted dictionary from extracted unread senders data"""
     try:
         unread_senders_unique_list = unique(unread_senders_raw_list)
         
@@ -358,6 +363,7 @@ def unread_senders_data_gen(unread_senders_raw_list,unread_senders_unique_dict,s
     
 #Generates unread senders table and image file
 def generate_unread_senders_viz():
+    """Creates a dataframe from unread sender information and generates a local image."""
     try:
         sender_table = pd.read_table(UNREAD_SENDERS_DATA_FILE_NAME, sep = '\t', header = None)
         plot = sender_table.groupby([0]).sum().plot(kind='pie', y=1, labeldistance=None, autopct='%1.0f%%', title="Senders of Unread Emails")
@@ -371,7 +377,6 @@ def generate_unread_senders_viz():
 
 #Reformats item text data to UTF-8
 def generic_email_data_gen(messages_list, email_data_file):
-
     # Have to generate a text file to decode the utf8 data
     try:
         print("Subject","\t",'SenderEmailAddress',"\t", 'ReceivedTime', file = email_data_file)
@@ -388,8 +393,10 @@ def generic_email_data_gen(messages_list, email_data_file):
         append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
 
 
-#Generates categories metric data
+
 def category_data_gen(category_list,categories_data_file):
+    ''' Generates category data by using the 'category_list', runs it through the 'unique' function,
+    saves results into a dict, and then prints it on a text file with the variable 'categories_data_file' '''
 
     category_dict = {} #dictionary variable to capture email category
     
@@ -497,6 +504,7 @@ def generate_generic_viz(flagged_counter_int,email_data_file,email_image_file,ti
 
 #Generates word cloud visualization
 def generate_word_cloud_viz():
+    """Creates wordcloud from email body text and saves as local image."""
     try:
         wc_cleaned_content_file = open(WORD_CLOUD_CLEANED_FILE_NAME, "r", encoding = "utf-8").read()
         
@@ -512,9 +520,10 @@ def generate_word_cloud_viz():
     except Exception as e:
         append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
 
-#Function to remove converse characters ("\u202a") and pop directional formatting characters from strings ("\u202c")
+
 #Code borrowed from https://stackoverflow.com/questions/49267999/remove-u202a-from-python-string
 def cleanup(inp):
+    """Removes converse characters ("\u202a") and pop directional formatting characters from strings ("\u202c")"""
     new_char = ""
     for char in inp:
         if char not in ["\u202a", "\u202c"]:
@@ -522,8 +531,9 @@ def cleanup(inp):
     return new_char
 
 
-#Removes hyperlink information from email body text to make more meaningful clouds
+
 def word_cloud_content_clean():
+    """"Creates a .txt file consisting of email body text with hyperlink information removed."""
     try:
         #Opens extracted email body text and cleansed text storage file
         wc_content= open(WORD_CLOUD_FILE_NAME, "r", encoding = "utf-8").read()
@@ -564,8 +574,9 @@ def word_cloud_content_clean():
 
 
 
-#Identifiies unique elements within a list
+
 def unique (list1):
+    """"Identifies unique elements within a list"""
     unique_elements_list = []
     for item in list1:
         if item not in unique_elements_list:
@@ -574,6 +585,8 @@ def unique (list1):
 
 
 def main():  
+    """Runs through the specified inputs that users will enter to get their analyze data for Outlook. Any errors generated during run
+    are displayed at end fo execution."""
     
     print("\n")
     print("Welcome to Outlook Analyzer!")
