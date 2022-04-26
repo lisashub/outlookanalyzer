@@ -66,16 +66,21 @@ IMAGE_FILE_NAME_DICT = {'blue': {"image_path": "black.jpg", "x": "0", "y": "0", 
                         'word_cloud': {"image_path": WORD_CLOUD_IMAGE_FILE_NAME, "x": "-35", "y": "100", "w": "275", "h": "250"},
                         'sender_plot': {"image_path": SENDER_PLOT_IMAGE_FILE_NAME, "x": "0", "y": "65", "w": "210", "h": "100"}}
 
-
-def append_to_error_list(function_name, error_text):
-    """Generates a list of errors that have occurred during progam execution which are printed at end of run."""
+#Function to generate a list of errors that have occurred during program execution; printed at end of run
+def append_to_error_list(function_name, error_text, optArg = None): #added optional argument for more detail
+    """Generates a list of errors that have occurred during progam execution which are printed at end of run."""    
     ERROR_LIST.append("function: " + function_name + " | " +  "error: " + error_text)
+    
+    #for more detailed troubleshooting
+    if optArg:
+        print("additional details: ", optArg)
 
-def extract_outlook_information(max_email_number_to_extract_input,date_start_input,date_end_input):
+
+def extract_outlook_information(max_email_number_to_extract_input,date_start_input,date_end_input): #to modify as new features required
     """Connects to Outlook client and iterates through items. Collects relavent information from Outlook 
     desktop client."""
-
-    #Establishes connection to client
+    
+    ##Establishes connection to client
     outlook = win32com.client.Dispatch("Outlook.Application").GetNamespace("MAPI")
     inbox = outlook.GetDefaultFolder(6)
     todo_folder = outlook.GetDefaultFolder(28) #outlook.GetDefaultFolder(28) is for the todo/flagged items
@@ -173,6 +178,12 @@ def extract_outlook_information(max_email_number_to_extract_input,date_start_inp
             path = os.environ['USERPROFILE']+"\AppData\Local\Temp\gen_py"
             
             if os.path.isfile(path):
+                
+                #Module cleanup from PointedEars https://gist.github.com/rdapaz/63590adb94a46039ca4a10994dff9dbe
+                system_modules = [module.__name__ for module in sys.module.values]
+                for module in system_modules:
+                    if re.match(r'win32com\.gen_py\..+', module):
+                        del sys.modules[module]
                 
                 shutil.rmtree(path)               
             
@@ -315,7 +326,6 @@ def extract_outlook_information(max_email_number_to_extract_input,date_start_inp
         figure_column_list = ['Category Name', 'Count']
         convert_csv_to_df_to_figure_to_pdf(CATEGORIES_DATA_FILE_NAME,title_str,figure_column_list,CATEGORIES_PDF_FILE_NAME)
     
-
     if flagged_counter_int < 1:
         print("Insufficient data to analyze flagged messages.")
     else:
@@ -351,7 +361,6 @@ def extract_outlook_information(max_email_number_to_extract_input,date_start_inp
 
     create_pdf_cover_page(message_counter_int,message_unread_counter_int)
 
-
 def return_sender(outlook_object):
     """ Returns sender email address """
 
@@ -369,7 +378,7 @@ def return_sender(outlook_object):
 def word_cloud_extract(messages):
     """Extracts word cloud information from most recent 50 messages."""
     try:
-     wc_file = open(WORD_CLOUD_FILE_NAME, "w+", encoding = "utf-8") #Creates data file for word cloud data
+     wc_file = open(WORD_CLOUD_FILE_NAME, "w+", encoding = "utf-8") #creates data file
      i = 0
      while (i<50):
          print(messages[i].Body, file = wc_file)
@@ -431,10 +440,10 @@ def build_text_with_subject_senderemail_receivedtime(messages_list, email_data_f
     except Exception as e:
         append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
 
+#Generates categories metric data
 def category_data_gen(category_list,categories_data_file):
     """ Generates category data by using the 'category_list', runs it through the 'unique' function,
     saves results into a dict, and then prints it on a text file with the variable 'categories_data_file' """
-
     category_dict = {} #dictionary variable to capture email category
     
     try:
@@ -561,6 +570,7 @@ def convert_csv_to_df_to_figure_to_pdf(email_data_file,title_str,columns_list,pd
     except Exception as e:
         append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
 
+
 def generate_word_cloud_viz():
     """Creates wordcloud from email body text and saves as local image."""
     try:
@@ -578,7 +588,6 @@ def generate_word_cloud_viz():
         plt.savefig(WORD_CLOUD_IMAGE_FILE_NAME)
     except Exception as e:
         append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
-
 
 #Code borrowed from https://stackoverflow.com/questions/49267999/remove-u202a-from-python-string
 def cleanup(inp):
@@ -608,7 +617,8 @@ def delete_temp_files(type_list):
 
 
 def word_cloud_content_clean():
-    """"Creates a .txt file consisting of email body text with hyperlink information removed."""
+    """"Creates a .txt file consisting of email body text with hyperlink information removed. Hyperlinks identified
+    with regex indexes matches for '<http', <mail', and '>' within original text body."""
     try:
         #Opens extracted email body text and cleansed text storage file
         wc_content= open(WORD_CLOUD_FILE_NAME, "r", encoding = "utf-8").read()
@@ -646,7 +656,6 @@ def word_cloud_content_clean():
     
     except Exception as e:
         append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
-
 
 def unique (list1):
     """ Identifies unique elements within a list """
@@ -734,11 +743,6 @@ def main(argv):
     if args.number and args.start and args.end:
         suppress_prompt = True
 
-
-def main():  
-    """Runs through the specified inputs that users will enter to get their analyze data for Outlook. Any errors generated during run
-    are displayed at end fo execution."""
-    
     print("\n")
     print("Welcome to Outlook Analyzer!")
 
