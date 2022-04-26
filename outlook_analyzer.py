@@ -67,13 +67,13 @@ IMAGE_FILE_NAME_DICT = {'blue': {"image_path": "black.jpg", "x": "0", "y": "0", 
                         'sender_plot': {"image_path": SENDER_PLOT_IMAGE_FILE_NAME, "x": "0", "y": "65", "w": "210", "h": "100"}}
 
 #Function to generate a list of errors that have occurred during program execution; printed at end of run
-def append_to_error_list(function_name, error_text, optArg = None): #added optional argument for more detail
+def append_to_error_list(function_name, error_text, optarg = None): #added optional argument for more detail
     """Generates a list of errors that have occurred during progam execution which are printed at end of run."""    
     ERROR_LIST.append("function: " + function_name + " | " +  "error: " + error_text)
     
     #for more detailed troubleshooting
-    if optArg:
-        print("additional details: ", optArg)
+    if optarg:
+        print("additional details: ", optarg)
 
 
 def extract_outlook_information(max_email_number_to_extract_input,date_start_input,date_end_input): #to modify as new features required
