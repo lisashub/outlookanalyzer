@@ -66,7 +66,7 @@ IMAGE_FILE_NAME_DICT = {'blue': {"image_path": "black.jpg", "x": "0", "y": "0", 
                         'word_cloud': {"image_path": WORD_CLOUD_IMAGE_FILE_NAME, "x": "-35", "y": "100", "w": "275", "h": "250"},
                         'sender_plot': {"image_path": SENDER_PLOT_IMAGE_FILE_NAME, "x": "0", "y": "65", "w": "210", "h": "100"}}
 
-#Function to generate a list of errors that have occurred during program execution; printed at end of run
+
 def append_to_error_list(function_name, error_text, optarg = None): #added optional argument for more detail
     """Generates a list of errors that have occurred during progam execution which are printed at end of run."""    
     ERROR_LIST.append("function: " + function_name + " | " +  "error: " + error_text)
@@ -161,32 +161,29 @@ def extract_outlook_information(max_email_number_to_extract_input,date_start_inp
         try:
             
             if (inbox_item.UnRead == True):
-
                 message_unread_counter_int = message_unread_counter_int + 1
-    
                 sender = return_sender(inbox_item)
-
                 unread_senders_raw_list.append(sender)
-
             else:
                 message_read_counter_int = message_read_counter_int + 1
                 
         except AttributeError as e: #Addresses issue where win32 package is occasionally unable to access "gen_py" directory
-            
-            append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
-            
+            append_to_error_list(str(sys._getframe().f_code.co_name),str(e), "gen_py folder unavailable; deletion attempted")
             path = os.environ['USERPROFILE']+"\AppData\Local\Temp\gen_py"
-            
             if os.path.isfile(path):
-                
-                #Module cleanup from PointedEars https://gist.github.com/rdapaz/63590adb94a46039ca4a10994dff9dbe
+                #Module cleanup from PointedEars @ https://gist.github.com/rdapaz/63590adb94a46039ca4a10994dff9dbe
                 system_modules = [module.__name__ for module in sys.module.values]
                 for module in system_modules:
                     if re.match(r'win32com\.gen_py\..+', module):
                         del sys.modules[module]
+                shutil.rmtree(path)
                 
-                shutil.rmtree(path)               
-            
+                if (inbox_item.UnRead == True):
+                    message_unread_counter_int = message_unread_counter_int + 1
+                    sender = return_sender(inbox_item)
+                    unread_senders_raw_list.append(sender)
+                else:
+                    message_read_counter_int = message_read_counter_int + 1
             else:
                 raise Exception
                 
@@ -410,7 +407,6 @@ def unread_senders_data_gen(unread_senders_raw_list,unread_senders_unique_dict,s
     except Exception as e:
         append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
     
-#Generates unread senders table and image file
 def generate_unread_senders_viz():
     """Creates a dataframe from unread sender information and generates a local image."""
     try:
@@ -423,7 +419,7 @@ def generate_unread_senders_viz():
     except Exception as e:
         append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
 
-# Currently used by Flagged email and Important email metric
+
 def build_text_with_subject_senderemail_receivedtime(messages_list, email_data_file):
     """ Reformats item text data to UTF-8 """
     # Have to generate a text file to decode the utf8 data
@@ -440,7 +436,7 @@ def build_text_with_subject_senderemail_receivedtime(messages_list, email_data_f
     except Exception as e:
         append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
 
-#Generates categories metric data
+
 def category_data_gen(category_list,categories_data_file):
     """ Generates category data by using the 'category_list', runs it through the 'unique' function,
     saves results into a dict, and then prints it on a text file with the variable 'categories_data_file' """
