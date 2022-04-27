@@ -173,7 +173,7 @@ def extract_outlook_information(max_email_number_to_extract_input,date_start_inp
             if os.path.isdir(path):
                 
                 #Module cache cleanup from PointedEars @ https://gist.github.com/rdapaz/63590adb94a46039ca4a10994dff9dbe
-                system_modules = [module.__name__ for module in sys.module.values]
+                system_modules = [m.__name__ for m in sys.modules.values()]
                 for module in system_modules:
                     if re.match(r'win32com\.gen_py\..+', module):
                         del sys.modules[module]
