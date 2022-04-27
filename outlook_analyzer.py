@@ -61,7 +61,7 @@ FLAGGED_EMAIL_PDF_FILE_NAME = TEMP_DIR + "\\" + TIME_STR + "_" + "b003.pdf"
 IMPORTANT_EMAIL_PDF_FILE_NAME = TEMP_DIR + "\\" + TIME_STR + "_" + "b004.pdf"
 FINAL_REPORT_PDF_FILE_NAME = "C:\\WINDOWS\\Temp\\" + TIME_STR + "_" + "outlook_analyzer_report.pdf" 
 
-IMAGE_FILE_NAME_DICT = {'blue': {"image_path": "true_blue.jpg", "x": "0", "y": "0", "w": "210", "h": "30"},
+IMAGE_FILE_NAME_DICT = {'blue': {"image_path": "black.jpg", "x": "0", "y": "0", "w": "210", "h": "30"},
                         'icon': {"image_path": "icon.png", "x": "0", "y": "0", "w": "35", "h": "30"},
                         'word_cloud': {"image_path": WORD_CLOUD_IMAGE_FILE_NAME, "x": "-35", "y": "50", "w": "275",
                                        "h": "135"},
