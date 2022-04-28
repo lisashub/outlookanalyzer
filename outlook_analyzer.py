@@ -77,8 +77,7 @@ def append_to_error_list(function_name, error_text, optarg = None): #added optio
     if optarg:
         print("additional details: ", optarg)
 
-
-def extract_outlook_information(max_email_number_to_extract_input,date_start_input,date_end_input): #to modify as new features required
+def extract_outlook_information(max_email_number_to_extract_input,start_date,end_date): #to modify as new features required
     """Connects to Outlook client and iterates through items. Collects relavent information from Outlook 
     desktop client."""
     
@@ -111,41 +110,6 @@ def extract_outlook_information(max_email_number_to_extract_input,date_start_inp
     message_read_counter_int = 0
     message_unread_counter_int = 0
     number_of_times_categories_assigned_counter_int = 0
-    
-
-    #Establishes how many months or days back the script should look for emails
-    if date_end_input[-1] == "m": #Value will be "m" if user enters range in months
-        month_int = int(date_end_input[0:-1])
-
-        if month_int == 0: #Value will be 0 if user does not enter a date rage; default used
-            end_date = datetime.now()
-        else:
-           end_date = datetime.now() - relativedelta(months=+month_int)
-
-    elif date_end_input[-1] == "d": #Value will be "d" if user enters range in days
-        day_int = int(date_end_input[0:-1])
- 
-        if day_int == 0:
-            end_date = datetime.now()
-        else:
-            end_date = datetime.now() - timedelta(days=day_int)
-
-    #Establishes how many months or days from the present the script should look for emails; see comments above for value descriptions
-    if date_start_input[-1] == "m":
-        month_int = int(date_start_input[0:-1])
-
-        if month_int == 0:
-            start_date = date.today()
-        else:
-           start_date = date.today() - relativedelta(months=+month_int)
-
-    elif date_start_input[-1] == "d":
-        day_int = int(date_start_input[0:-1])
- 
-        if day_int == 0:
-            start_date = date.today()
-        else:
-            start_date = date.today() - timedelta(days=day_int)
 
     #Converts email extraction date inputs into string format for filtering messages
     date_start_str = start_date.strftime('%m/%d/%Y %H:%M %p')
@@ -554,6 +518,7 @@ def convert_csv_to_df_to_figure_to_pdf(email_data_file,title_str,columns_list,pd
         
     try:
         print("\n")
+        print(title_str)
         print(tabulate(df, headers = 'keys', tablefmt = 'fancy_grid',showindex='never'))
 
     except Exception as e:
@@ -604,6 +569,26 @@ def delete_temp_files(type_list):
 
         break;
 
+def convert_time_range_to_date(date_range):
+    """ Convert string value such as 12m (ago) or 10d (ago) into an actual date using relativedelta or timedelta """
+
+    if date_range[-1] == "m": #Value will be "m" if user enters range in months
+        month_int = int(date_range[0:-1])
+
+        if month_int == 0: #Value will be 0 if user does not enter a date rage; default used
+            actual_date = datetime.now()
+        else:
+           actual_date = datetime.now() - relativedelta(months=+month_int)
+
+    elif date_range[-1] == "d": #Value will be "d" if user enters range in days
+        day_int = int(date_range[0:-1])
+ 
+        if day_int == 0:
+            actual_date = datetime.now()
+        else:
+            actual_date = datetime.now() - timedelta(days=day_int)
+
+    return actual_date
 
 def word_cloud_content_clean():
     """"Creates a .txt file consisting of email body text with hyperlink information removed. Hyperlinks identified
@@ -754,7 +739,7 @@ def main(argv):
             #Receives and checks user input for oldest email cut-off date
             while True:
                 date_start_input = input("From how far back would you like to collect and analyze emails in months or days (e.g. 10m, 12d)? (Hit enter for default: 12 months ago)") or "12m"
-
+                
                 try:
                     int(date_start_input[0:-1])
                     if date_start_input[-1] == "m" or date_start_input[-1] == "d":
@@ -766,7 +751,7 @@ def main(argv):
             #Receives and checks user input for email recency cut-off date
             while True:
                 date_end_input = input("What's the cutoff for the most recent emails you'd like to collect and analyze in months or days (e.g. 1m, 10d)? (Hit enter for default: today)") or "0m"
-
+                
                 try:
                     int(date_end_input[0:-1])
                     if date_end_input[-1] == "m" or date_end_input[-1] == "d":
@@ -774,11 +759,22 @@ def main(argv):
                 except ValueError:
                     print("This is not a valid format. Please enter as '##m' or '##d' where d is for days and m is for months  (e.g. 10d or 1m")
 
+    start_date = convert_time_range_to_date(date_start_input)
+    end_date = convert_time_range_to_date(date_end_input)
+
+    if end_date < start_date:
+        print("")
+        print("Entered starting date : " + str(start_date))
+        print("Entered cutoff date   : " + str(end_date))
+        print("")
+        print("Error: The cutoff date must be after the starting date.")
+        exit()
+
     # Clean left over temp .pdf files from previous run if exist
     delete_temp_files([".pdf"])
 
     # Begin email extraction
-    extract_outlook_information(max_email_number_to_extract_input,date_start_input,date_end_input)
+    extract_outlook_information(max_email_number_to_extract_input,start_date,end_date)
 
     pdf_merge(open_file,output_file_name)
     # Clean left over temp .txt, .jpg, .png files from previous run if exist
