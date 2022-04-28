@@ -518,6 +518,7 @@ def convert_csv_to_df_to_figure_to_pdf(email_data_file,title_str,columns_list,pd
         
     try:
         print("\n")
+        print(title_str)
         print(tabulate(df, headers = 'keys', tablefmt = 'fancy_grid',showindex='never'))
 
     except Exception as e:
