@@ -168,18 +168,18 @@ def extract_outlook_information(max_email_number_to_extract_input,date_start_inp
                 message_read_counter_int = message_read_counter_int + 1
                 
         except AttributeError as e: #Addresses issue where win32 package is occasionally unable to access "gen_py" directory
-            append_to_error_list(str(sys._getframe().f_code.co_name),str(e),"attribute error detected; rerun extraction for accurate data")
-            path = os.environ['USERPROFILE']+"\AppData\Local\Temp\gen_py"
-            if os.path.isdir(path):
-                
-                #Module cache cleanup from PointedEars @ https://gist.github.com/rdapaz/63590adb94a46039ca4a10994dff9dbe
-                system_modules = [m.__name__ for m in sys.modules.values()]
-                for module in system_modules:
-                    if re.match(r'win32com\.gen_py\..+', module):
-                        del sys.modules[module]
-                
-                shutil.rmtree(path)
-
+            try:
+                append_to_error_list(str(sys._getframe().f_code.co_name),str(e),"WARNING: Attribute error detected; rerun extraction for accurate data")
+                path = os.environ['USERPROFILE']+"\AppData\Local\Temp\gen_py"
+                if os.path.isdir(path):
+                #Module cache cleanup adopted from PointedEars @ https://gist.github.com/rdapaz/63590adb94a46039ca4a10994dff9dbe
+                    system_modules = [m.__name__ for m in sys.modules.values()]
+                    for module in system_modules:
+                        if re.match(r'win32com\.gen_py\..+', module):
+                           del sys.modules[module]
+                           shutil.rmtree(path)   
+            except Exception:
+                raise Exception
         except Exception as e:
             append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
         
@@ -208,7 +208,6 @@ def extract_outlook_information(max_email_number_to_extract_input,date_start_inp
                 append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
         
             try:
-
                 email_class = inbox_item.Class
                 important_messages_dict['Class'] = email_class
             except Exception as e:
