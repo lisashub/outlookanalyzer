@@ -77,7 +77,6 @@ def append_to_error_list(function_name, error_text, optarg = None): #added optio
     if optarg:
         print("additional details: ", optarg)
 
-#Function to extract relevant Outlook information from user's desktop client
 def extract_outlook_information(max_email_number_to_extract_input,start_date,end_date): #to modify as new features required
     """Connects to Outlook client and iterates through items. Collects relavent information from Outlook 
     desktop client."""
@@ -591,7 +590,6 @@ def convert_time_range_to_date(date_range):
 
     return actual_date
 
-#Removes hyperlink information from email body text to make more meaningful clouds
 def word_cloud_content_clean():
     """"Creates a .txt file consisting of email body text with hyperlink information removed. Hyperlinks identified
     with regex indexes matches for '<http', <mail', and '>' within original text body."""
