@@ -63,10 +63,10 @@ FINAL_REPORT_PDF_FILE_NAME = "C:\\WINDOWS\\Temp\\" + TIME_STR + "_" + "outlook_a
 
 IMAGE_FILE_NAME_DICT = {'blue': {"image_path": "black.jpg", "x": "0", "y": "0", "w": "210", "h": "30"},
                         'icon': {"image_path": "icon.png", "x": "0", "y": "0", "w": "35", "h": "30"},
-                        'word_cloud': {"image_path": WORD_CLOUD_IMAGE_FILE_NAME, "x": "-35", "y": "50", "w": "275",
-                                       "h": "135"},
-                        'sender_plot': {"image_path": SENDER_PLOT_IMAGE_FILE_NAME, "x": "0", "y": "195", "w": "210",
-                                        "h": "80"}}
+                        'word_cloud': {"image_path": WORD_CLOUD_IMAGE_FILE_NAME, "x": "20", "y": "52", "w": "170",
+                                       "h": "100"},
+                        'sender_plot': {"image_path": SENDER_PLOT_IMAGE_FILE_NAME, "x": "10", "y": "160", "w": "195",
+                                        "h": "125"}}
 
 
 def append_to_error_list(function_name, error_text, optarg = None): #added optional argument for more detail
@@ -111,6 +111,7 @@ def extract_outlook_information(max_email_number_to_extract_input,date_start_inp
     message_read_counter_int = 0
     message_unread_counter_int = 0
     number_of_times_categories_assigned_counter_int = 0
+    
 
     #Establishes how many months or days back the script should look for emails
     if date_end_input[-1] == "m": #Value will be "m" if user enters range in months
@@ -405,10 +406,10 @@ def generate_unread_senders_viz():
     """Creates a dataframe from unread sender information and generates a local image."""
     try:
         sender_table = pd.read_table(UNREAD_SENDERS_DATA_FILE_NAME, sep = '\t', header = None)
-        plot = sender_table.groupby([0]).sum().plot(kind='pie', y=1, labeldistance=None, autopct='%1.0f%%', title="Senders of Unread Emails")
+        plot = sender_table.groupby([0]).sum().plot(kind='pie', y=1, labeldistance=None, autopct='%1.0f%%', title="Top 10 Senders of Unread Emails")
         plot.legend(bbox_to_anchor=(1,1)) #Anchors plot legend to right of plot
-        plot.set_ylabel("Senders")
-        plot.figure.savefig(SENDER_PLOT_IMAGE_FILE_NAME, bbox_inches='tight') #Saves plot locally
+        plot.set_ylabel("Sender Percentage of Unread Emails")
+        plot.figure.savefig(SENDER_PLOT_IMAGE_FILE_NAME, bbox_inches='tight', dpi=150) #Saves plot locally
         print("\n","Top 10 Senders of Unread Emails: ", "\n", sender_table)
     except Exception as e:
         append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
@@ -502,10 +503,8 @@ def create_pdf_cover_page(message_counter_int,message_unread_counter_int):
         pdf = FPDF()
         pdf.add_page()  # adds pdf page
         pdf.set_font('Arial', 'B', 18)  # sets pdf fonts
-        pdf.cell(0, 60, 'Outlook Analyzer Report', 0, 0, align='C')  # Puts in title
-        pdf.cell(-190, 75, NOW_DATE, 0, 0, align='C') # Puts in real time date
-
-
+        pdf.cell(0, 60, 'Outlook Analyzer Report'+ " - " + NOW_DATE, 0, 0, align='C')  # Puts in dated title
+        pdf.cell(-190, 75, 'Word Cloud Keyword Summary (50 Most Recent Emails)', 0, 0, align='C')
         # Traverse through nested dictionary
         for image_id, image_info in IMAGE_FILE_NAME_DICT.items():
             # for troubleshooting
@@ -575,7 +574,7 @@ def generate_word_cloud_viz():
         plt.rcParams["figure.figsize"] = [10,8]
         plt.imshow(word_cloud)
         plt.axis('off')
-        plt.savefig(WORD_CLOUD_IMAGE_FILE_NAME, dpi=150)
+        plt.savefig(WORD_CLOUD_IMAGE_FILE_NAME, bbox_inches='tight', pad_inches=.005, dpi=150)
     except Exception as e:
         append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
 
