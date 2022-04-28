@@ -68,14 +68,21 @@ IMAGE_FILE_NAME_DICT = {'blue': {"image_path": "black.jpg", "x": "0", "y": "0", 
                         'sender_plot': {"image_path": SENDER_PLOT_IMAGE_FILE_NAME, "x": "0", "y": "195", "w": "210",
                                         "h": "80"}}
 
-#Function to generate a list of errors that have occurred during program execution; printed at end of run
-def append_to_error_list(function_name, error_text, optArg = None): #added optional argument for more detail
+
+def append_to_error_list(function_name, error_text, optarg = None): #added optional argument for more detail
+    """Generates a list of errors that have occurred during progam execution which are printed at end of run."""    
     ERROR_LIST.append("function: " + function_name + " | " +  "error: " + error_text)
+    
+    #for more detailed troubleshooting
+    if optarg:
+        print("additional details: ", optarg)
 
-#Function to extract relevant Outlook information from user's desktop client
+
 def extract_outlook_information(max_email_number_to_extract_input,date_start_input,date_end_input): #to modify as new features required
-
-    #Connection to Outlook object model established
+    """Connects to Outlook client and iterates through items. Collects relavent information from Outlook 
+    desktop client."""
+    
+    ##Establishes connection to client
     outlook = win32com.client.Dispatch("Outlook.Application").GetNamespace("MAPI")
     inbox = outlook.GetDefaultFolder(6)
     todo_folder = outlook.GetDefaultFolder(28) #outlook.GetDefaultFolder(28) is for the todo/flagged items
@@ -156,29 +163,25 @@ def extract_outlook_information(max_email_number_to_extract_input,date_start_inp
         try:
             
             if (inbox_item.UnRead == True):
-
                 message_unread_counter_int = message_unread_counter_int + 1
-    
                 sender = return_sender(inbox_item)
-
                 unread_senders_raw_list.append(sender)
-
             else:
                 message_read_counter_int = message_read_counter_int + 1
                 
-        except AttributeError as e:
-            
-            append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
-            
-            path = os.environ['USERPROFILE']+"\AppData\Local\Temp\gen_py"
-            
-            if os.path.isfile(path):
-                
-                shutil.rmtree(path)               
-            
-            else:
+        except AttributeError as e: #Addresses issue where win32 package is occasionally unable to access "gen_py" directory
+            try:
+                append_to_error_list(str(sys._getframe().f_code.co_name),str(e),"WARNING: Attribute error detected; rerun extraction for accurate data")
+                path = os.environ['USERPROFILE']+"\AppData\Local\Temp\gen_py"
+                if os.path.isdir(path):
+                #Module cache cleanup adopted from PointedEars @ https://gist.github.com/rdapaz/63590adb94a46039ca4a10994dff9dbe
+                    system_modules = [m.__name__ for m in sys.modules.values()]
+                    for module in system_modules:
+                        if re.match(r'win32com\.gen_py\..+', module):
+                           del sys.modules[module]
+                           shutil.rmtree(path)   
+            except Exception:
                 raise Exception
-                
         except Exception as e:
             append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
         
@@ -207,7 +210,6 @@ def extract_outlook_information(max_email_number_to_extract_input,date_start_inp
                 append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
         
             try:
-
                 email_class = inbox_item.Class
                 important_messages_dict['Class'] = email_class
             except Exception as e:
@@ -363,21 +365,23 @@ def return_sender(outlook_object):
 
     return sender
 
-#Extracts word cloud information from most recent 50 messages
+
 def word_cloud_extract(messages):
+    """Extracts word cloud information from most recent 50 messages."""
     try:
      wc_file = open(WORD_CLOUD_FILE_NAME, "w+", encoding = "utf-8") #creates data file
      i = 0
      while (i<50):
          print(messages[i].Body, file = wc_file)
          i = i + 1
-     word_cloud_content_clean() #text-cleaning function called
+     word_cloud_content_clean() #Calls word cloud text-cleaning function
      wc_file.close()
     except Exception as e:
         append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
 
-#Generates data for unread senders plot
+
 def unread_senders_data_gen(unread_senders_raw_list,unread_senders_unique_dict,sender_data_file):
+    """Creates a sorted dictionary from extracted unread senders data"""
     try:
         unread_senders_unique_list = unique(unread_senders_raw_list)
         
@@ -397,8 +401,8 @@ def unread_senders_data_gen(unread_senders_raw_list,unread_senders_unique_dict,s
     except Exception as e:
         append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
     
-#Generates unread senders table and image file
 def generate_unread_senders_viz():
+    """Creates a dataframe from unread sender information and generates a local image."""
     try:
         sender_table = pd.read_table(UNREAD_SENDERS_DATA_FILE_NAME, sep = '\t', header = None)
         plot = sender_table.groupby([0]).sum().plot(kind='pie', y=1, labeldistance=None, autopct='%1.0f%%', title="Senders of Unread Emails")
@@ -409,7 +413,7 @@ def generate_unread_senders_viz():
     except Exception as e:
         append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
 
-# Currently used by Flagged email and Important email metric
+
 def build_text_with_subject_senderemail_receivedtime(messages_list, email_data_file):
     """ Reformats item text data to UTF-8 """
     # Have to generate a text file to decode the utf8 data
@@ -426,12 +430,10 @@ def build_text_with_subject_senderemail_receivedtime(messages_list, email_data_f
     except Exception as e:
         append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
 
-#Generates categories metric data
-def category_data_gen(category_list,categories_data_file):
 
+def category_data_gen(category_list,categories_data_file):
     """ Generates category data by using the 'category_list', runs it through the 'unique' function,
     saves results into a dict, and then prints it on a text file with the variable 'categories_data_file' """
-
     category_dict = {} #dictionary variable to capture email category
     
     try:
@@ -494,7 +496,6 @@ def pdf_merge(open_file,output_file_name):
         subprocess.Popen([output_file_name],shell=True)
 
 def create_pdf_cover_page(message_counter_int,message_unread_counter_int):
-
     """ Add images into a PDF file """
     try:
         # Code for creating first page of PDF report
@@ -559,8 +560,9 @@ def convert_csv_to_df_to_figure_to_pdf(email_data_file,title_str,columns_list,pd
     except Exception as e:
         append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
 
-#Generates word cloud visualization
+
 def generate_word_cloud_viz():
+    """Creates wordcloud from email body text and saves as local image."""
     try:
         wc_cleaned_content_file = open(WORD_CLOUD_CLEANED_FILE_NAME, "r", encoding = "utf-8").read()
         
@@ -603,8 +605,10 @@ def delete_temp_files(type_list):
 
         break;
 
-#Removes hyperlink information from email body text to make more meaningful clouds
+
 def word_cloud_content_clean():
+    """"Creates a .txt file consisting of email body text with hyperlink information removed. Hyperlinks identified
+    with regex indexes matches for '<http', <mail', and '>' within original text body."""
     try:
         #Opens extracted email body text and cleansed text storage file
         wc_content= open(WORD_CLOUD_FILE_NAME, "r", encoding = "utf-8").read()
