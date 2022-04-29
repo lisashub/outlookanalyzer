@@ -2,8 +2,10 @@
 
 ## Installing Dependencies
 Install required packages:
+> **_ANACONDA USERS:_** Sadly, Anaconda's environment defaults to an older verison of pywin32 and breaks a key .DLL path when attempting to updateto versions >228. - a key  BEFORE following below pip install instructions, remove the "pywin32==[version]" line from your requirements text and save, then follow the below instructions. You will need to install this package by entering "conda install pywin32" into your command prompt after the other packages have been installed.  See [this link](https://github.com/mhammond/pywin32/issues/1865) and [this link](https://stackoverflow.com/questions/60750197/pywin32-importerror-dll-load-failed-the-specified-module-could-not-be-found) for further details.
+>
 
-(1) Open command prompt
+(1) Open a command prompt session
 
 (2) Navigate to the directory of the Outlook Analyzer project
 
