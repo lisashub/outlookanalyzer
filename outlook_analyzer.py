@@ -186,18 +186,7 @@ def extract_outlook_information(max_email_number_to_extract_input,start_date,end
             except Exception as e:
                 append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
 
-            #Retrieves more readable sender data if sender is within internal MS exchange
-            if inbox_item.SenderEmailType == "EX":
-                try:
-                    sender_email = inbox_item.Sender.GetExchangeUser().PrimarySmtpAddress
-                except Exception as e:
-                    append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
-            else:
-                try:
-                    sender_email = inbox_item.SenderEmailAddress
-                except Exception as e:
-                    append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
-
+            sender_email = return_sender(inbox_item)
             important_messages_dict['SenderEmailAddress'] = sender_email
 
             #Adds the attributes for each item to the important_messages_dict
@@ -245,7 +234,6 @@ def extract_outlook_information(max_email_number_to_extract_input,start_date,end
                 append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
 
             sender_email = return_sender(task)
-
             flagged_messages_dict['SenderEmailAddress'] = sender_email
 
         # Add the attributes for each task to the flagged_messages_dict
@@ -662,7 +650,7 @@ def main(argv):
     parser.add_argument("-n", "--number", help = "Max number of email messages you would like to extract (between 50 and 100000)")
     parser.add_argument("-s", "--start", help = "From how far back would you like to collect and analyze emails in months or days (e.g. 10m, 12d)")
     parser.add_argument("-e", "--end", help = "What's the cutoff for the most recent emails you'd like to collect and analyze in months or days (e.g. 1m, 10d)")
-    parser.add_argument("-o", "--output", help = "Location to save the report (must used .pdf extension)")
+    parser.add_argument("-o", "--output", help = "Location to save the report (must use .pdf extension)")
     parser.add_argument("-O", "--open", help = "Open the report at the end of script running?")
 
 
