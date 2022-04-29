@@ -314,7 +314,10 @@ def return_sender(outlook_object):
         else:
             sender = outlook_object.SenderEmailAddress
     elif outlook_object.Class == 56 or outlook_object.Class == 53: #Class "53" and "56" are responses to meeting invites
+        if outlook_object.SenderEmailType == "EX": # SenderEmailType "EX" is assigned to MailItems received from internal MS Exchange
             sender = outlook_object.SenderName
+        else:
+            sender = "Unavailable"
     else:
         sender = outlook_object.SenderEmailAddress
 
