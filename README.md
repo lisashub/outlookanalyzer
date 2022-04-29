@@ -1,9 +1,13 @@
 # Outlook Analyzer ReadMe
-
+[![Python 3.9](https://img.shields.io/badge/python-3.9-blue.svg)](https://www.python.org/downloads/release/python-390/)[![Python 3.10](https://img.shields.io/badge/python-3.10-blue.svg)](https://www.python.org/downloads/release/python-310/)
 ## Installing Dependencies
 Install required packages:
+> **_ANACONDA USERS:_** Sadly, Anaconda's environment defaults to an older verison of pywin32 and breaks a key .DLL path when attempting to update to versions >228. BEFORE following below pip install instructions, remove the "pywin32==[version]" line from your requirements text and save, then follow the below instructions. You will need to install the pywin32 package by entering "conda install pywin32" into your command prompt after the other packages have been installed.  See [this link](https://github.com/mhammond/pywin32/issues/1865) and [this link](https://stackoverflow.com/questions/60750197/pywin32-importerror-dll-load-failed-the-specified-module-could-not-be-found) for further details. 
+> 
+> If you already have pywin32 installed before working with this project, you should first uninstall Anaconda's older version using "pip uninstall pywin32" then execute "conda install pywin32".
+>
 
-(1) Open command prompt
+(1) Open a command prompt session
 
 (2) Navigate to the directory of the Outlook Analyzer project
 
