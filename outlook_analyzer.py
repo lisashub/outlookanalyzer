@@ -537,7 +537,7 @@ def generate_word_cloud_viz():
 
 #Code borrowed from https://stackoverflow.com/questions/49267999/remove-u202a-from-python-string
 def cleanup(inp):
-    """ Removes converse characters ("\u202a") and pop directional formatting characters from strings ("\u202c") """
+    """Removes left-to-right embedding characters ("\u202a") and pop directional formatting characters ("\u202c") from strings"""
     new_char = ""
     for char in inp:
         if char not in ["\u202a", "\u202c"]:
@@ -633,6 +633,7 @@ def unique (list1):
 
 # Code borrowed from https://note.nkmk.me/en/python-check-int-float/
 def is_integer_num(n):
+    """Checks that input is of integer type"""
     if isinstance(n, int):
         return True
     if isinstance(n, float):
