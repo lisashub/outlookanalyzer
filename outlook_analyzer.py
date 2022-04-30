@@ -69,7 +69,7 @@ IMAGE_FILE_NAME_DICT = {'blue': {"image_path": "black.jpg", "x": "0", "y": "0", 
 
 
 def append_to_error_list(function_name, error_text, optarg = None): #added optional argument for more detail
-    """Generates a list of errors that have occurred during progam execution which are printed at end of run."""    
+    """Generates a list of errors that have occurred during program execution which are printed at end of run."""    
     ERROR_LIST.append("function: " + function_name + " | " +  "error: " + error_text)
     
     #for more detailed troubleshooting
