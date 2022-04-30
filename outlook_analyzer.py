@@ -1,5 +1,4 @@
 from datetime import timedelta
-from datetime import date
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 from fpdf import FPDF
@@ -360,7 +359,7 @@ def unread_senders_data_gen(unread_senders_raw_list,unread_senders_unique_dict,s
         append_to_error_list(str(sys._getframe().f_code.co_name),str(e))
     
 def generate_unread_senders_viz():
-    """Creates a dataframe from unread sender information and generates a local image."""
+    """Creates a dataframe from unread sender information and generates a locally saved plot."""
     try:
         sender_table = pd.read_table(UNREAD_SENDERS_DATA_FILE_NAME, sep = '\t', header = None)
         plot = sender_table.groupby([0]).sum().plot(kind='pie', y=1, labeldistance=None, autopct='%1.0f%%', title="Top 10 Senders of Unread Emails")
