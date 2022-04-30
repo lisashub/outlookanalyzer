@@ -63,6 +63,6 @@ If you only enter some but not all of the optional command line arguments then s
 
   **Q:** Why is my email Inbox only going back 12 months?
 
-  **A:** Outlook defaults to use cached exchage mode with only 12 months available. To change this you can go into the Outlook Desktop client, choose File > Account Settings > Account Settings... > on Email tab, choose the Account > Click "Change..." or Double click the Account > Deselect "Use Cached Exchanged Mode to download email to an Outlook data file" > Change the slider bar to indicate how many years past to download email.
+  **A:** Outlook defaults to use cached exchange mode with only 12 months available. To change this you can go into the Outlook Desktop client, choose File > Account Settings > Account Settings... > on Email tab, choose the Account > Click "Change..." or Double click the Account > Deselect "Use Cached Exchanged Mode to download email to an Outlook data file" > Change the slider bar to indicate how many years past to download email.
   
 ##
