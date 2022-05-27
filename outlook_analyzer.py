@@ -1,25 +1,24 @@
-from datetime import timedelta
+import argparse
 from datetime import datetime
-from dateutil.relativedelta import relativedelta
 from fpdf import FPDF
 from glob import glob
-from matplotlib.backends.backend_pdf import PdfPages
-from PyPDF2 import PdfFileMerger
-from tabulate import tabulate
-from tqdm import tqdm
-from wordcloud import WordCloud, STOPWORDS
-
-import argparse
-import matplotlib.pyplot as plt
 import os
 import pandas as pd
+from PyPDF2 import PdfFileMerger
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_pdf import PdfPages
 import re
+from dateutil.relativedelta import relativedelta
 import shutil
 import subprocess
 import sys
 import time
+from tabulate import tabulate
+from datetime import timedelta
+from tqdm import tqdm
 import traceback
 import win32com.client
+from wordcloud import WordCloud, STOPWORDS
 
 # sets real time date as a string for PDF file
 NOW = datetime.now()
@@ -77,13 +76,12 @@ def append_to_error_list(function_name, error_text, optarg = None): #added optio
         print("additional details: ", optarg)
 
 def extract_outlook_information(max_email_number_to_extract_input,start_date,end_date): #to modify as new features required
-    """Connects to Outlook client and iterates through items. Collects relavent information from Outlook 
-    desktop client."""
+    """Connects to Outlook desktop client. Collects relavent information from client."""
     
     ##Establishes connection to client
     outlook = win32com.client.Dispatch("Outlook.Application").GetNamespace("MAPI")
-    inbox = outlook.GetDefaultFolder(6)
-    todo_folder = outlook.GetDefaultFolder(28) #outlook.GetDefaultFolder(28) is for the todo/flagged items
+    inbox = outlook.GetDefaultFolder(6) #outlook.GetDefaultFolder(6) points to client default inbox
+    todo_folder = outlook.GetDefaultFolder(28) #outlook.GetDefaultFolder(28) points to client todo/flagged items
     messages = inbox.Items
     todo_items = todo_folder.Items
 
@@ -121,7 +119,7 @@ def extract_outlook_information(max_email_number_to_extract_input,start_date,end
     
     #Iterates through inbox items and extracts relevant information
     filtered_messages.Sort("[ReceivedTime]",True)
-    for inbox_item in tqdm(filtered_messages): # Displays tdqm progress bar during iteration
+    for inbox_item in tqdm(filtered_messages): # tdqm wrapper displays progress bar during iteration
 
         #Unread email metric logic
         try:
@@ -138,7 +136,7 @@ def extract_outlook_information(max_email_number_to_extract_input,start_date,end
                 append_to_error_list(str(sys._getframe().f_code.co_name),str(e),"WARNING: Attribute error detected; rerun extraction for accurate data")
                 path = os.environ['USERPROFILE']+"\AppData\Local\Temp\gen_py"
                 if os.path.isdir(path):
-                #Module cache cleanup adopted from PointedEars @ https://gist.github.com/rdapaz/63590adb94a46039ca4a10994dff9dbe
+                #Module cache cleanup adapted from post by PointedEars @ https://gist.github.com/rdapaz/63590adb94a46039ca4a10994dff9dbe
                     system_modules = [m.__name__ for m in sys.modules.values()]
                     for module in system_modules:
                         if re.match(r'win32com\.gen_py\..+', module):
